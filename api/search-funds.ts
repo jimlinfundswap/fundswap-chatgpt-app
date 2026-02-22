@@ -13,6 +13,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     investmentArea,
     fundNameCategory,
     dividendFrequency,
+    tradingType,
   } = req.query;
 
   const results = searchFunds({
@@ -22,6 +23,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     investmentArea: asString(investmentArea),
     fundNameCategory: asString(fundNameCategory),
     dividendFrequency: asString(dividendFrequency),
+    tradingType: asString(tradingType),
   });
 
   const display = results.slice(0, 20);
@@ -40,6 +42,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       dividendFrequency: f.dividendFrequency,
       rateOfReturn1Year: f.rateOfReturn1Year,
       rateOfReturn3Years: f.rateOfReturn3Years,
+      tradingType: f.tradingType,
       url: getFundUrl(f.mfxId),
     })),
   });

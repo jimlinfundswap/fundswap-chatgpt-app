@@ -69,6 +69,15 @@
               "type": "string",
               "enum": ["不配息", "月配息", "季配息", "半年配息", "年配息", "未固定配息"]
             }
+          },
+          {
+            "name": "tradingType",
+            "in": "query",
+            "description": "交易方式（PUR=單筆申購、SIP=定期定額、SWI=轉入、SWO=轉出、RDM=贖回）",
+            "schema": {
+              "type": "string",
+              "enum": ["PUR", "SIP", "SWI", "SWO", "RDM"]
+            }
           }
         ],
         "responses": {
@@ -299,6 +308,7 @@
           "dividendFrequency": { "type": "string" },
           "rateOfReturn1Year": { "type": "number" },
           "rateOfReturn3Years": { "type": "number" },
+          "tradingType": { "type": "array", "items": { "type": "string" }, "description": "交易方式（PUR=單筆申購、SIP=定期定額）" },
           "url": { "type": "string" }
         }
       },

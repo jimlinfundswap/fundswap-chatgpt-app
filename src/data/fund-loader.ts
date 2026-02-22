@@ -58,6 +58,7 @@ export function searchFunds(query: {
   investmentArea?: string;
   fundNameCategory?: string;
   dividendFrequency?: string;
+  tradingType?: string;
 }): Fund[] {
   let results = loadFunds();
 
@@ -96,6 +97,12 @@ export function searchFunds(query: {
   if (query.dividendFrequency) {
     results = results.filter(
       (f) => f.dividendFrequency === query.dividendFrequency
+    );
+  }
+
+  if (query.tradingType) {
+    results = results.filter((f) =>
+      f.tradingType.includes(query.tradingType!)
     );
   }
 
