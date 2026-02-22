@@ -22,7 +22,7 @@ const server = new McpServer({
 // Tool: search_funds
 server.tool(
   "search_funds",
-  "搜尋基金。可依關鍵字、基金類型、風險等級、投資區域篩選。",
+  "搜尋基金。可依關鍵字、基金類型、基金分類、風險等級、投資區域、配息頻率篩選。",
   searchFundsSchema.shape,
   async (input) => ({
     content: [{ type: "text", text: handleSearchFunds(input) }],
@@ -32,7 +32,7 @@ server.tool(
 // Tool: get_fund_detail
 server.tool(
   "get_fund_detail",
-  "查詢單一基金的完整資料，包含基本資料、績效表現、風險指標。",
+  "查詢單一基金的完整資料，包含基本資料、績效表現、風險指標、前十大持股。",
   fundDetailSchema.shape,
   async (input) => ({
     content: [{ type: "text", text: handleFundDetail(input) }],
@@ -42,7 +42,7 @@ server.tool(
 // Tool: compare_funds
 server.tool(
   "compare_funds",
-  "比較 2-5 檔基金的績效、費用與風險指標。",
+  "比較 2-5 檔基金的績效、風險指標與配息資訊。",
   compareFundsSchema.shape,
   async (input) => ({
     content: [{ type: "text", text: handleCompareFunds(input) }],
@@ -52,7 +52,7 @@ server.tool(
 // Tool: get_top_performers
 server.tool(
   "get_top_performers",
-  "查詢基金績效排行榜，可依類型與期間篩選。",
+  "查詢基金績效排行榜，可依基金類型、基金分類與期間篩選。",
   topPerformersSchema.shape,
   async (input) => ({
     content: [{ type: "text", text: handleTopPerformers(input) }],

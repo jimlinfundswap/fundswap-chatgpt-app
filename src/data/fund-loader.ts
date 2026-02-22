@@ -1,54 +1,63 @@
 import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
-export interface Fund {
-  fund_id: string;
-  name_zh: string;
-  name_en: string;
-  type: string;
-  company: string;
-  manager: string;
-  inception_date: string;
-  fund_size_billion: number;
-  management_fee_pct: number;
-  custody_fee_pct: number;
-  region: string;
-  investment_target: string;
-  risk_level: string;
-  nav: number;
-  nav_date: string;
-  return_1m_pct: number;
-  return_3m_pct: number;
-  return_6m_pct: number;
-  return_1y_pct: number;
-  return_3y_pct: number;
-  return_5y_pct: number;
-  return_ytd_pct: number;
-  sharpe_ratio: number;
-  std_dev_pct: number;
-  max_drawdown_pct: number;
-  url: string;
+export interface StockHolding {
+  stock_name: string;
+  holding_ratio: number;
 }
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+export interface Fund {
+  mfxId: string;
+  fundShortName: string;
+  generalIssuer: string;
+  fundNameCategory: string;
+  investmentArea: string;
+  investmentTarget: string;
+  riskLevel: number;
+  dividendFrequency: string;
+  annualizedStandardDeviation: number;
+  costPerformanceValue: number;
+  dividendAnnualizedYield: number | null;
+  dividendAnnualRateOfReturn: number | null;
+  rateOfReturn3Months: number;
+  rateOfReturn6Months: number;
+  rateOfReturn1Year: number;
+  rateOfReturn2Year: number;
+  rateOfReturn3Years: number;
+  rateOfReturn5Years: number;
+  tradingType: string[];
+  stockTop: StockHolding[];
+}
 
 let funds: Fund[] | null = null;
 
 export function loadFunds(): Fund[] {
   if (funds) return funds;
 
-  const dataPath = resolve(__dirname, "../../data/funds-sample.json");
+  const dataPath = resolve(process.cwd(), "data/funds-sample.json");
   const raw = readFileSync(dataPath, "utf-8");
-  funds = JSON.parse(raw) as Fund[];
+  const parsed = JSON.parse(raw) as Record<string, unknown>[];
+
+  funds = parsed.map((item) => ({
+    ...item,
+    stockTop: Array.isArray(item.stockTop)
+      ? (item.stockTop as Record<string, unknown>[]).map((s) => ({
+          stock_name: s.stock_name as string,
+          holding_ratio: s.holding_ratio as number,
+        }))
+      : [],
+  })) as Fund[];
+
   return funds;
 }
 
 export function searchFunds(query: {
   keyword?: string;
-  type?: string;
-  risk_level?: string;
-  region?: string;
+  investmentTarget?: string;
+  riskLevel?: number;
+  investmentArea?: string;
+  fundNameCategory?: string;
+  dividendFrequency?: string;
 }): Fund[] {
   let results = loadFunds();
 
@@ -56,104 +65,157 @@ export function searchFunds(query: {
     const kw = query.keyword.toLowerCase();
     results = results.filter(
       (f) =>
-        f.name_zh.toLowerCase().includes(kw) ||
-        f.name_en.toLowerCase().includes(kw) ||
-        f.company.toLowerCase().includes(kw) ||
-        f.fund_id.toLowerCase().includes(kw)
+        f.fundShortName.toLowerCase().includes(kw) ||
+        f.generalIssuer.toLowerCase().includes(kw) ||
+        f.mfxId.toLowerCase().includes(kw)
     );
   }
 
-  if (query.type) {
-    results = results.filter((f) => f.type === query.type);
+  if (query.investmentTarget) {
+    results = results.filter(
+      (f) => f.investmentTarget === query.investmentTarget
+    );
   }
 
-  if (query.risk_level) {
-    results = results.filter((f) => f.risk_level === query.risk_level);
+  if (query.riskLevel) {
+    results = results.filter((f) => f.riskLevel === query.riskLevel);
   }
 
-  if (query.region) {
-    results = results.filter((f) => f.region.includes(query.region!));
+  if (query.investmentArea) {
+    results = results.filter((f) =>
+      f.investmentArea.includes(query.investmentArea!)
+    );
+  }
+
+  if (query.fundNameCategory) {
+    results = results.filter(
+      (f) => f.fundNameCategory === query.fundNameCategory
+    );
+  }
+
+  if (query.dividendFrequency) {
+    results = results.filter(
+      (f) => f.dividendFrequency === query.dividendFrequency
+    );
   }
 
   return results;
 }
 
-export function getFundById(fundId: string): Fund | undefined {
-  return loadFunds().find((f) => f.fund_id === fundId);
+export function getFundById(mfxId: string): Fund | undefined {
+  return loadFunds().find((f) => f.mfxId === mfxId);
 }
 
+const PERIOD_KEY_MAP: Record<string, keyof Fund> = {
+  "3m": "rateOfReturn3Months",
+  "6m": "rateOfReturn6Months",
+  "1y": "rateOfReturn1Year",
+  "2y": "rateOfReturn2Year",
+  "3y": "rateOfReturn3Years",
+  "5y": "rateOfReturn5Years",
+};
+
 export function getTopPerformers(
-  type?: string,
+  filters: { investmentTarget?: string; fundNameCategory?: string },
   period: string = "1y",
   limit: number = 10
 ): Fund[] {
   let results = loadFunds();
 
-  if (type) {
-    results = results.filter((f) => f.type === type);
+  if (filters.investmentTarget) {
+    results = results.filter(
+      (f) => f.investmentTarget === filters.investmentTarget
+    );
   }
 
-  const periodKey = `return_${period}_pct` as keyof Fund;
+  if (filters.fundNameCategory) {
+    results = results.filter(
+      (f) => f.fundNameCategory === filters.fundNameCategory
+    );
+  }
+
+  const periodKey = PERIOD_KEY_MAP[period];
+  if (!periodKey) return [];
+
   return results
     .filter((f) => typeof f[periodKey] === "number")
     .sort((a, b) => (b[periodKey] as number) - (a[periodKey] as number))
     .slice(0, limit);
 }
 
+export function getFundUrl(mfxId: string): string {
+  return `https://www.fundswap.com.tw/trade/funds/${mfxId}/`;
+}
+
 export function formatFundSummary(fund: Fund): string {
   return [
-    `**${fund.name_zh}** (${fund.fund_id})`,
-    `類型：${fund.type} | 風險等級：${fund.risk_level} | 投信：${fund.company}`,
-    `最新淨值：${fund.nav}（${fund.nav_date}）`,
-    `報酬率：1M ${fund.return_1m_pct}% | 1Y ${fund.return_1y_pct}% | YTD ${fund.return_ytd_pct}%`,
+    `**${fund.fundShortName}** (${fund.mfxId})`,
+    `類型：${fund.investmentTarget} | 分類：${fund.fundNameCategory} | 風險等級：RR${fund.riskLevel}`,
+    `投信：${fund.generalIssuer} | 區域：${fund.investmentArea} | 配息：${fund.dividendFrequency}`,
+    `報酬率：3M ${fund.rateOfReturn3Months?.toFixed(2) ?? "-"}% | 1Y ${fund.rateOfReturn1Year?.toFixed(2) ?? "-"}% | 3Y ${fund.rateOfReturn3Years?.toFixed(2) ?? "-"}%`,
     "",
-    `查看完整資訊：${fund.url}`,
-    `立即投資：https://fundswap.com.tw/trade/${fund.fund_id}`,
+    `查看完整資訊：${getFundUrl(fund.mfxId)}`,
   ].join("\n");
 }
 
 export function formatFundDetail(fund: Fund): string {
-  return [
-    `# ${fund.name_zh}`,
-    `${fund.name_en}`,
+  const lines = [
+    `# ${fund.fundShortName}`,
     "",
     "## 基本資料",
     `| 項目 | 內容 |`,
     `|------|------|`,
-    `| 基金代碼 | ${fund.fund_id} |`,
-    `| 基金類型 | ${fund.type} |`,
-    `| 投信公司 | ${fund.company} |`,
-    `| 經理人 | ${fund.manager} |`,
-    `| 成立日期 | ${fund.inception_date} |`,
-    `| 基金規模 | ${fund.fund_size_billion} 億 |`,
-    `| 管理費 | ${fund.management_fee_pct}% |`,
-    `| 保管費 | ${fund.custody_fee_pct}% |`,
-    `| 投資區域 | ${fund.region} |`,
-    `| 投資標的 | ${fund.investment_target} |`,
-    `| 風險等級 | ${fund.risk_level} |`,
+    `| 基金代碼 | ${fund.mfxId} |`,
+    `| 基金類型 | ${fund.investmentTarget} |`,
+    `| 基金分類 | ${fund.fundNameCategory} |`,
+    `| 投信公司 | ${fund.generalIssuer} |`,
+    `| 投資區域 | ${fund.investmentArea} |`,
+    `| 風險等級 | RR${fund.riskLevel} |`,
+    `| 配息頻率 | ${fund.dividendFrequency} |`,
+    `| CP 值 | ${fund.costPerformanceValue} |`,
     "",
     "## 績效表現",
     `| 期間 | 報酬率 |`,
     `|------|--------|`,
-    `| 1 個月 | ${fund.return_1m_pct}% |`,
-    `| 3 個月 | ${fund.return_3m_pct}% |`,
-    `| 6 個月 | ${fund.return_6m_pct}% |`,
-    `| 1 年 | ${fund.return_1y_pct}% |`,
-    `| 3 年 | ${fund.return_3y_pct}% |`,
-    `| 5 年 | ${fund.return_5y_pct}% |`,
-    `| 今年以來 | ${fund.return_ytd_pct}% |`,
+    `| 3 個月 | ${fund.rateOfReturn3Months?.toFixed(2) ?? "-"}% |`,
+    `| 6 個月 | ${fund.rateOfReturn6Months?.toFixed(2) ?? "-"}% |`,
+    `| 1 年 | ${fund.rateOfReturn1Year?.toFixed(2) ?? "-"}% |`,
+    `| 2 年 | ${fund.rateOfReturn2Year?.toFixed(2) ?? "-"}% |`,
+    `| 3 年 | ${fund.rateOfReturn3Years?.toFixed(2) ?? "-"}% |`,
+    `| 5 年 | ${fund.rateOfReturn5Years?.toFixed(2) ?? "-"}% |`,
     "",
     "## 風險指標",
     `| 指標 | 數值 |`,
     `|------|------|`,
-    `| Sharpe Ratio | ${fund.sharpe_ratio} |`,
-    `| 標準差 | ${fund.std_dev_pct}% |`,
-    `| 最大回撤 | ${fund.max_drawdown_pct}% |`,
-    "",
-    `最新淨值：**${fund.nav}**（${fund.nav_date}）`,
+    `| 年化標準差 | ${fund.annualizedStandardDeviation?.toFixed(2) ?? "-"}% |`,
+  ];
+
+  if (fund.dividendAnnualizedYield != null) {
+    lines.push(
+      `| 配息年化殖利率 | ${fund.dividendAnnualizedYield.toFixed(2)}% |`
+    );
+  }
+  if (fund.dividendAnnualRateOfReturn != null) {
+    lines.push(
+      `| 配息年化報酬率 | ${fund.dividendAnnualRateOfReturn.toFixed(2)}% |`
+    );
+  }
+
+  if (fund.stockTop.length > 0) {
+    lines.push("", "## 前十大持股", `| 股票名稱 | 持股比例 |`, `|----------|----------|`);
+    for (const s of fund.stockTop) {
+      lines.push(
+        `| ${s.stock_name} | ${(s.holding_ratio * 100).toFixed(2)}% |`
+      );
+    }
+  }
+
+  lines.push(
     "",
     "---",
-    `查看完整資訊：${fund.url}`,
-    `立即投資：https://fundswap.com.tw/trade/${fund.fund_id}`,
-  ].join("\n");
+    `查看完整資訊：${getFundUrl(fund.mfxId)}`,
+    `立即投資：${getFundUrl(fund.mfxId)}`
+  );
+
+  return lines.join("\n");
 }

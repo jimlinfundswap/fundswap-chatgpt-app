@@ -1,0 +1,347 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FundSwap 基金查詢 API",
+    "description": "查詢台灣基金資料、績效比較與排行。資料來源：FundSwap (fundswap.com.tw)",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://fundswap-chatgpt-app.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/search-funds": {
+      "get": {
+        "operationId": "searchFunds",
+        "summary": "搜尋基金",
+        "description": "依關鍵字、基金類型、基金分類、風險等級、投資區域、配息頻率篩選基金。",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜尋關鍵字（基金名稱、代碼、投信公司）",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "investmentTarget",
+            "in": "query",
+            "description": "基金類型",
+            "schema": {
+              "type": "string",
+              "enum": ["股票型", "債券型", "平衡型", "貨幣型"]
+            }
+          },
+          {
+            "name": "riskLevel",
+            "in": "query",
+            "description": "風險等級（1 最低，5 最高）",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 5 }
+          },
+          {
+            "name": "investmentArea",
+            "in": "query",
+            "description": "投資區域（如：台灣、全球、美國、歐洲）",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "fundNameCategory",
+            "in": "query",
+            "description": "基金分類",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ESG概念", "ETF及指數", "大型股票", "不分產業(股)", "不分產業(債)",
+                "中小型股票", "中短期債券", "公用事業", "天然資源", "水資源",
+                "可轉換債券", "生技醫療", "企業債券", "多元收益(債)", "投資等級債",
+                "抗通膨債", "房地產", "股債混合", "金融服務", "非投資等級債",
+                "政府債券", "科技", "消費服務", "能源", "貨幣市場",
+                "貨幣對沖", "貴金屬", "新能源", "新興市場(股)", "新興市場(債)",
+                "環境生態"
+              ]
+            }
+          },
+          {
+            "name": "dividendFrequency",
+            "in": "query",
+            "description": "配息頻率",
+            "schema": {
+              "type": "string",
+              "enum": ["不配息", "月配息", "季配息", "半年配息", "年配息", "未固定配息"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "搜尋結果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer", "description": "符合條件的基金總數" },
+                    "showing": { "type": "integer", "description": "本次回傳筆數（最多 20）" },
+                    "funds": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/FundSummary" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/fund-detail": {
+      "get": {
+        "operationId": "getFundDetail",
+        "summary": "查詢基金詳情",
+        "description": "查詢單一基金的完整資料，包含基本資料、績效表現、風險指標、前十大持股。",
+        "parameters": [
+          {
+            "name": "mfxId",
+            "in": "query",
+            "required": true,
+            "description": "基金代碼（如 ARGG、ED32）",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "基金詳細資料",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FundDetail" }
+              }
+            }
+          },
+          "404": {
+            "description": "找不到該基金"
+          }
+        }
+      }
+    },
+    "/api/compare-funds": {
+      "post": {
+        "operationId": "compareFunds",
+        "summary": "比較基金",
+        "description": "比較 2-5 檔基金的績效、風險指標與配息資訊。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["mfx_ids"],
+                "properties": {
+                  "mfx_ids": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "minItems": 2,
+                    "maxItems": 5,
+                    "description": "要比較的基金代碼（2-5 檔）"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "基金比較結果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notFound": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "找不到的基金代碼"
+                    },
+                    "funds": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/FundComparison" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/top-performers": {
+      "get": {
+        "operationId": "getTopPerformers",
+        "summary": "基金績效排行",
+        "description": "查詢基金績效排行榜，可依基金類型、基金分類與期間篩選。",
+        "parameters": [
+          {
+            "name": "investmentTarget",
+            "in": "query",
+            "description": "基金類型（不填則顯示全部）",
+            "schema": {
+              "type": "string",
+              "enum": ["股票型", "債券型", "平衡型", "貨幣型"]
+            }
+          },
+          {
+            "name": "fundNameCategory",
+            "in": "query",
+            "description": "基金分類（如：科技、貴金屬、ESG概念）",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "description": "排行期間（預設 1 年）",
+            "schema": {
+              "type": "string",
+              "enum": ["3m", "6m", "1y", "2y", "3y", "5y"],
+              "default": "1y"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "顯示筆數（預設 10，最多 20）",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 20, "default": 10 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "績效排行結果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "period": { "type": "string" },
+                    "total": { "type": "integer" },
+                    "funds": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/FundRanking" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FundSummary": {
+        "type": "object",
+        "properties": {
+          "mfxId": { "type": "string" },
+          "fundShortName": { "type": "string" },
+          "investmentTarget": { "type": "string" },
+          "fundNameCategory": { "type": "string" },
+          "riskLevel": { "type": "integer" },
+          "generalIssuer": { "type": "string" },
+          "investmentArea": { "type": "string" },
+          "dividendFrequency": { "type": "string" },
+          "rateOfReturn1Year": { "type": "number" },
+          "rateOfReturn3Years": { "type": "number" },
+          "url": { "type": "string" }
+        }
+      },
+      "FundDetail": {
+        "type": "object",
+        "properties": {
+          "mfxId": { "type": "string" },
+          "fundShortName": { "type": "string" },
+          "investmentTarget": { "type": "string" },
+          "fundNameCategory": { "type": "string" },
+          "riskLevel": { "type": "integer" },
+          "generalIssuer": { "type": "string" },
+          "investmentArea": { "type": "string" },
+          "dividendFrequency": { "type": "string" },
+          "costPerformanceValue": { "type": "number" },
+          "dividendAnnualizedYield": { "type": "number", "nullable": true },
+          "dividendAnnualRateOfReturn": { "type": "number", "nullable": true },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "3m": { "type": "number" },
+              "6m": { "type": "number" },
+              "1y": { "type": "number" },
+              "2y": { "type": "number" },
+              "3y": { "type": "number" },
+              "5y": { "type": "number" }
+            }
+          },
+          "annualizedStandardDeviation": { "type": "number" },
+          "stockTop": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stockName": { "type": "string" },
+                "holdingRatio": { "type": "number" }
+              }
+            }
+          },
+          "url": { "type": "string" }
+        }
+      },
+      "FundComparison": {
+        "type": "object",
+        "properties": {
+          "mfxId": { "type": "string" },
+          "fundShortName": { "type": "string" },
+          "investmentTarget": { "type": "string" },
+          "fundNameCategory": { "type": "string" },
+          "riskLevel": { "type": "integer" },
+          "generalIssuer": { "type": "string" },
+          "investmentArea": { "type": "string" },
+          "dividendFrequency": { "type": "string" },
+          "costPerformanceValue": { "type": "number" },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "3m": { "type": "number" },
+              "6m": { "type": "number" },
+              "1y": { "type": "number" },
+              "2y": { "type": "number" },
+              "3y": { "type": "number" },
+              "5y": { "type": "number" }
+            }
+          },
+          "annualizedStandardDeviation": { "type": "number" },
+          "url": { "type": "string" }
+        }
+      },
+      "FundRanking": {
+        "type": "object",
+        "properties": {
+          "rank": { "type": "integer" },
+          "mfxId": { "type": "string" },
+          "fundShortName": { "type": "string" },
+          "investmentTarget": { "type": "string" },
+          "fundNameCategory": { "type": "string" },
+          "riskLevel": { "type": "integer" },
+          "generalIssuer": { "type": "string" },
+          "dividendFrequency": { "type": "string" },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "3m": { "type": "number" },
+              "6m": { "type": "number" },
+              "1y": { "type": "number" },
+              "2y": { "type": "number" },
+              "3y": { "type": "number" },
+              "5y": { "type": "number" }
+            }
+          },
+          "url": { "type": "string" }
+        }
+      }
+    }
+  }
+}

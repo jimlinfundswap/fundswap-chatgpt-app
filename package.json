@@ -13,7 +13,12 @@
     "type": "git",
     "url": "git+https://github.com/jimlinfundswap/fundswap-chatgpt-app.git"
   },
-  "keywords": ["chatgpt", "mcp", "fund", "fundswap"],
+  "keywords": [
+    "chatgpt",
+    "mcp",
+    "fund",
+    "fundswap"
+  ],
   "author": "FundSwap",
   "license": "ISC",
   "bugs": {
@@ -27,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.3.0",
+    "@vercel/node": "^5.6.6",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

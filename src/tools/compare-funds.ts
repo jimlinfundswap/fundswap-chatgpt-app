@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { getFundById, type Fund } from "../data/fund-loader.js";
+import { getFundById, getFundUrl, type Fund } from "../data/fund-loader.js";
 
 export const compareFundsSchema = z.object({
-  fund_ids: z
+  mfx_ids: z
     .array(z.string())
     .min(2)
     .max(5)
@@ -15,7 +15,7 @@ export function handleCompareFunds(input: CompareFundsInput): string {
   const funds: Fund[] = [];
   const notFound: string[] = [];
 
-  for (const id of input.fund_ids) {
+  for (const id of input.mfx_ids) {
     const fund = getFundById(id);
     if (fund) {
       funds.push(fund);
@@ -25,50 +25,67 @@ export function handleCompareFunds(input: CompareFundsInput): string {
   }
 
   if (funds.length < 2) {
-    return `需要至少 2 檔基金才能比較。找不到的代碼：${notFound.join(", ")}\n\n搜尋基金：https://fundswap.com.tw/funds`;
+    return `需要至少 2 檔基金才能比較。找不到的代碼：${notFound.join(", ")}\n\n搜尋基金：https://www.fundswap.com.tw/trade/funds/`;
   }
 
   const header = `# 基金比較（${funds.length} 檔）\n\n`;
 
-  // Build comparison table
-  const cols = funds.map((f) => f.name_zh);
+  const cols = funds.map((f) => f.fundShortName);
   const rows = [
     ["項目", ...cols],
-    ["基金代碼", ...funds.map((f) => f.fund_id)],
-    ["類型", ...funds.map((f) => f.type)],
-    ["風險等級", ...funds.map((f) => f.risk_level)],
-    ["投信公司", ...funds.map((f) => f.company)],
-    ["最新淨值", ...funds.map((f) => `${f.nav}`)],
-    ["管理費", ...funds.map((f) => `${f.management_fee_pct}%`)],
-    ["1 個月報酬", ...funds.map((f) => `${f.return_1m_pct}%`)],
-    ["3 個月報酬", ...funds.map((f) => `${f.return_3m_pct}%`)],
-    ["1 年報酬", ...funds.map((f) => `${f.return_1y_pct}%`)],
-    ["3 年報酬", ...funds.map((f) => `${f.return_3y_pct}%`)],
-    ["YTD 報酬", ...funds.map((f) => `${f.return_ytd_pct}%`)],
-    ["Sharpe Ratio", ...funds.map((f) => `${f.sharpe_ratio}`)],
-    ["標準差", ...funds.map((f) => `${f.std_dev_pct}%`)],
-    ["最大回撤", ...funds.map((f) => `${f.max_drawdown_pct}%`)],
+    ["基金代碼", ...funds.map((f) => f.mfxId)],
+    ["類型", ...funds.map((f) => f.investmentTarget)],
+    ["分類", ...funds.map((f) => f.fundNameCategory)],
+    ["風險等級", ...funds.map((f) => `RR${f.riskLevel}`)],
+    ["投信公司", ...funds.map((f) => f.generalIssuer)],
+    ["投資區域", ...funds.map((f) => f.investmentArea)],
+    ["配息頻率", ...funds.map((f) => f.dividendFrequency)],
+    ["CP 值", ...funds.map((f) => `${f.costPerformanceValue}`)],
+    [
+      "3 個月報酬",
+      ...funds.map((f) => `${f.rateOfReturn3Months?.toFixed(2) ?? "-"}%`),
+    ],
+    [
+      "6 個月報酬",
+      ...funds.map((f) => `${f.rateOfReturn6Months?.toFixed(2) ?? "-"}%`),
+    ],
+    [
+      "1 年報酬",
+      ...funds.map((f) => `${f.rateOfReturn1Year?.toFixed(2) ?? "-"}%`),
+    ],
+    [
+      "2 年報酬",
+      ...funds.map((f) => `${f.rateOfReturn2Year?.toFixed(2) ?? "-"}%`),
+    ],
+    [
+      "3 年報酬",
+      ...funds.map((f) => `${f.rateOfReturn3Years?.toFixed(2) ?? "-"}%`),
+    ],
+    [
+      "5 年報酬",
+      ...funds.map((f) => `${f.rateOfReturn5Years?.toFixed(2) ?? "-"}%`),
+    ],
+    [
+      "年化標準差",
+      ...funds.map(
+        (f) => `${f.annualizedStandardDeviation?.toFixed(2) ?? "-"}%`
+      ),
+    ],
   ];
 
   const table = rows
     .map((row) => `| ${row.join(" | ")} |`)
     .join("\n")
-    .replace(
-      /\n/,
-      `\n|${rows[0].map(() => "------").join("|")}|\n`
-    );
+    .replace(/\n/, `\n|${rows[0].map(() => "------").join("|")}|\n`);
 
   const links = funds
-    .map(
-      (f) =>
-        `- ${f.name_zh}：${f.url}`
-    )
+    .map((f) => `- ${f.fundShortName}：${getFundUrl(f.mfxId)}`)
     .join("\n");
 
   const footer = [
     "",
     "---",
-    "查看完整比較：https://fundswap.com.tw/compare",
+    "查看完整比較：https://www.fundswap.com.tw/trade/funds/",
     links,
   ].join("\n");
 
