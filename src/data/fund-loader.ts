@@ -34,19 +34,11 @@ let funds: Fund[] | null = null;
 export function loadFunds(): Fund[] {
   if (funds) return funds;
 
-  const dataPath = resolve(process.cwd(), "data/funds-sample.json");
+  const dataPath = resolve(process.cwd(), "data/funds.json");
   const raw = readFileSync(dataPath, "utf-8");
   const parsed = JSON.parse(raw) as Record<string, unknown>[];
 
-  funds = parsed.map((item) => ({
-    ...item,
-    stockTop: Array.isArray(item.stockTop)
-      ? (item.stockTop as Record<string, unknown>[]).map((s) => ({
-          stock_name: s.stock_name as string,
-          holding_ratio: s.holding_ratio as number,
-        }))
-      : [],
-  })) as Fund[];
+  funds = parsed as unknown as Fund[];
 
   return funds;
 }
