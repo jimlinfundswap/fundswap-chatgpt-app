@@ -1,0 +1,33 @@
+{
+  "name": "fundswap-chatgpt-app",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "convert-csv": "tsx scripts/csv-to-json.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jimlinfundswap/fundswap-chatgpt-app.git"
+  },
+  "keywords": ["chatgpt", "mcp", "fund", "fundswap"],
+  "author": "FundSwap",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jimlinfundswap/fundswap-chatgpt-app/issues"
+  },
+  "homepage": "https://github.com/jimlinfundswap/fundswap-chatgpt-app#readme",
+  "description": "FundSwap ChatGPT App — 基金查詢導流工具，基於 MCP + OpenAI Apps SDK",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
