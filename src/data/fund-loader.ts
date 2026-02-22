@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import fundsData from "../../data/funds.json" with { type: "json" };
 
 export interface StockHolding {
   stock_name: string;
@@ -29,17 +28,9 @@ export interface Fund {
   stockTop: StockHolding[];
 }
 
-let funds: Fund[] | null = null;
+const funds = fundsData as unknown as Fund[];
 
 export function loadFunds(): Fund[] {
-  if (funds) return funds;
-
-  const dataPath = resolve(process.cwd(), "data/funds.json");
-  const raw = readFileSync(dataPath, "utf-8");
-  const parsed = JSON.parse(raw) as Record<string, unknown>[];
-
-  funds = parsed as unknown as Fund[];
-
   return funds;
 }
 
