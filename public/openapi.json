@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://fundswap-chatgpt-app.vercel.app"
+      "url": "https://fundswap-chatgpt-app-1.vercel.app"
     }
   ],
   "paths": {
