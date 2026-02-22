@@ -143,6 +143,53 @@ export function getTopPerformers(
     .slice(0, limit);
 }
 
+export interface HoldingMatch {
+  fund: Fund;
+  matchedHoldings: StockHolding[];
+  totalMatchedRatio: number;
+}
+
+export function searchByHolding(query: {
+  stockName: string;
+  investmentTarget?: string;
+  limit?: number;
+}): HoldingMatch[] {
+  let allFunds = loadFunds();
+
+  if (query.investmentTarget) {
+    allFunds = allFunds.filter(
+      (f) => f.investmentTarget === query.investmentTarget
+    );
+  }
+
+  const keywords = query.stockName
+    .toLowerCase()
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+
+  const matches: HoldingMatch[] = [];
+
+  for (const fund of allFunds) {
+    const matchedHoldings = fund.stockTop.filter((s) =>
+      keywords.some((kw) => s.stock_name.toLowerCase().includes(kw))
+    );
+
+    if (matchedHoldings.length > 0) {
+      const totalMatchedRatio = matchedHoldings.reduce(
+        (sum, h) => sum + h.holding_ratio,
+        0
+      );
+      matches.push({ fund, matchedHoldings, totalMatchedRatio });
+    }
+  }
+
+  matches.sort((a, b) => b.totalMatchedRatio - a.totalMatchedRatio);
+
+  const limit = query.limit ?? 10;
+  return matches.slice(0, limit);
+}
+
 export function getFundUrl(mfxId: string): string {
   return `https://www.fundswap.com.tw/trade/funds/${mfxId}/`;
 }

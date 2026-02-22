@@ -172,6 +172,57 @@
         }
       }
     },
+    "/api/search-by-holding": {
+      "get": {
+        "operationId": "searchByHolding",
+        "summary": "依持股搜尋基金",
+        "description": "搜尋持有特定公司股票的基金。支援多關鍵字（逗號分隔），例如搜尋 NVIDIA,台積電 會找出持有這些公司的基金，依持股比例排序。",
+        "parameters": [
+          {
+            "name": "stockName",
+            "in": "query",
+            "required": true,
+            "description": "股票/公司名稱關鍵字，多個用逗號分隔（如：NVIDIA,台積電,TSMC）",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "investmentTarget",
+            "in": "query",
+            "description": "限定基金類型",
+            "schema": {
+              "type": "string",
+              "enum": ["股票型", "債券型", "平衡型", "貨幣型"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "顯示筆數（預設 10，最多 20）",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 20, "default": 10 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "持有該股票的基金列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": { "type": "string" },
+                    "total": { "type": "integer" },
+                    "funds": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/HoldingMatch" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/top-performers": {
       "get": {
         "operationId": "getTopPerformers",
@@ -314,6 +365,32 @@
             }
           },
           "annualizedStandardDeviation": { "type": "number" },
+          "url": { "type": "string" }
+        }
+      },
+      "HoldingMatch": {
+        "type": "object",
+        "properties": {
+          "mfxId": { "type": "string" },
+          "fundShortName": { "type": "string" },
+          "investmentTarget": { "type": "string" },
+          "fundNameCategory": { "type": "string" },
+          "riskLevel": { "type": "integer" },
+          "generalIssuer": { "type": "string" },
+          "investmentArea": { "type": "string" },
+          "dividendFrequency": { "type": "string" },
+          "rateOfReturn1Year": { "type": "number" },
+          "matchedHoldings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stockName": { "type": "string" },
+                "holdingRatio": { "type": "number" }
+              }
+            }
+          },
+          "totalMatchedRatio": { "type": "number" },
           "url": { "type": "string" }
         }
       },
