@@ -3,7 +3,12 @@
     "allow": [
       "Bash(npx vercel:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nperf: 精簡基金資料 JSON \\(6MB → 2MB\\)，加速 API cold start\n\n- 新增 scripts/slim-data.cjs 精簡腳本，移除 stockTop 中未使用的 4 個欄位\n- 產出 data/funds.json 精簡版（1,086 檔基金不變）\n- fund-loader.ts 改讀 funds.json，簡化解析邏輯\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nperf: 精簡基金資料 JSON \\(6MB → 2MB\\)，加速 API cold start\n\n- 新增 scripts/slim-data.cjs 精簡腳本，移除 stockTop 中未使用的 4 個欄位\n- 產出 data/funds.json 精簡版（1,086 檔基金不變）\n- fund-loader.ts 改讀 funds.json，簡化解析邏輯\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(powershell.exe -Command \"Get-Command node -ErrorAction SilentlyContinue | Format-List\":*)",
+      "Bash(powershell.exe -Command:*)",
+      "Bash(python:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
