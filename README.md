@@ -1,67 +1,274 @@
-# FundSwap ChatGPT App
+# FundSwap AI 找基金
 
-基金查詢導流工具，基於 MCP (Model Context Protocol) 與 REST API 雙介面架構，讓 ChatGPT、Claude 等 AI 助手能查詢、比較台灣基金資料。
+台灣基金查詢 AI 工具，提供 MCP Server 與 REST API 雙介面，讓 ChatGPT、Claude 等 AI 助手能查詢、比較、篩選台灣共同基金資料。
 
-資料來源：[FundSwap](https://www.fundswap.com.tw)
+- 資料來源：[FundSwap 基金交換平台](https://www.fundswap.com.tw)
+- 收錄基金：**1,086 檔**台灣可投資基金
+- API 位址：`https://fundswap-chatgpt-app-1.vercel.app`
 
-## 功能
+---
 
-| 功能 | MCP Tool | REST API |
-|------|----------|----------|
-| 搜尋基金 | `search_funds` | `GET /api/search-funds` |
-| 基金詳情 | `get_fund_detail` | `GET /api/fund-detail` |
-| 基金比較 | `compare_funds` | `POST /api/compare-funds` |
-| 績效排行 | `get_top_performers` | `GET /api/top-performers` |
-| 持股搜尋 | — | `GET /api/search-by-holding` |
+## 可查詢的資料
+
+| 資料類型 | 說明 |
+|----------|------|
+| 基金基本資料 | 名稱、代碼(mfxId)、投信公司、基金類型、分類、投資區域、風險等級 |
+| 績效表現 | 近 3 個月 / 6 個月 / 1 年 / 2 年 / 3 年 / 5 年報酬率 |
+| 配息資訊 | 配息頻率、年化配息率、配息年報酬率 |
+| 風險指標 | 風險等級 RR1~RR5、年化標準差、CP 值 |
+| 持股明細 | 前十大持股名稱與佔比 |
+| 交易方式 | 單筆申購(PUR)、定期定額(SIP)、轉入(SWI)、轉出(SWO)、贖回(RDM) |
 
 ### 篩選條件
 
-- 關鍵字（基金名稱、代碼、投信公司）
-- 基金類型：股票型、債券型、平衡型、貨幣型
-- 風險等級：RR1 ~ RR5
-- 投資區域：台灣、全球、美國、歐洲等
-- 基金分類：科技、ESG、貴金屬等 31 種
-- 配息頻率：月配息、季配息、半年配息、年配息、不配息
-- 交易類別：PUR（單筆）、SIP（定期定額）
+| 條件 | 可用值 |
+|------|--------|
+| 關鍵字 | 基金名稱、代碼、投信公司（模糊搜尋） |
+| 基金類型 | 股票型、債券型、平衡型、貨幣型 |
+| 風險等級 | 1(RR1) ~ 5(RR5) |
+| 投資區域 | 台灣、全球、美國、歐洲、日本、中國、亞太、新興市場 等 |
+| 基金分類 | 科技、ESG概念、ETF及指數、大型股票、生技醫療、貴金屬、新能源 等 31 種 |
+| 配息頻率 | 月配息、季配息、半年配息、年配息、不配息、未固定配息 |
+| 交易方式 | PUR(單筆)、SIP(定期定額) |
 
-## Tech Stack
+---
 
-- **TypeScript** + **Node.js** (ES2022)
-- **@modelcontextprotocol/sdk** — MCP Server 實作
-- **Zod** — 參數驗證
-- **Vercel** — Serverless API 部署
+## API 文件
 
-## 快速開始
+Base URL: `https://fundswap-chatgpt-app-1.vercel.app`
 
-```bash
-npm install
-```
+### 1. 搜尋基金
 
-### MCP Server（本地開發）
-
-```bash
-npm run dev       # 以 tsx 啟動 MCP Server (stdio)
-npm run build     # 編譯 TypeScript
-npm start         # 以 node 執行編譯後的 server
-```
-
-### REST API（Vercel）
-
-API 部署在 Vercel，各路由為獨立 Serverless Function：
+依條件篩選基金，最多回傳 20 筆。
 
 ```
-GET  /api/search-funds?keyword=科技&riskLevel=3
-GET  /api/fund-detail?mfxId=ARGG
-POST /api/compare-funds        body: { "mfxIds": ["ARGG", "ED32"] }
-GET  /api/top-performers?investmentTarget=股票型&period=1Y&limit=10
-GET  /api/search-by-holding?stockName=NVIDIA,台積電
+GET /api/search-funds
 ```
 
-OpenAPI 規格：`/openapi.json`
+| 參數 | 必填 | 說明 | 範例 |
+|------|------|------|------|
+| keyword | 否 | 關鍵字搜尋 | `科技`、`ARGG`、`富蘭克林` |
+| investmentTarget | 否 | 基金類型 | `股票型` |
+| riskLevel | 否 | 風險等級 1~5 | `3` |
+| investmentArea | 否 | 投資區域 | `美國` |
+| fundNameCategory | 否 | 基金分類 | `科技` |
+| dividendFrequency | 否 | 配息頻率 | `月配息` |
+| tradingType | 否 | 交易方式 | `SIP` |
+
+**範例：**
+```
+GET /api/search-funds?investmentTarget=股票型&investmentArea=美國&riskLevel=4
+GET /api/search-funds?keyword=科技&dividendFrequency=月配息
+GET /api/search-funds?tradingType=SIP&fundNameCategory=ESG概念
+```
+
+**回傳：**
+```json
+{
+  "total": 45,
+  "showing": 20,
+  "funds": [
+    {
+      "mfxId": "ARGG",
+      "fundShortName": "富蘭克林坦伯頓全球投資系列...",
+      "investmentTarget": "股票型",
+      "fundNameCategory": "科技",
+      "riskLevel": 4,
+      "generalIssuer": "富蘭克林",
+      "investmentArea": "全球",
+      "dividendFrequency": "不配息",
+      "rateOfReturn1Year": 15.23,
+      "rateOfReturn3Years": 32.56,
+      "tradingType": ["PUR", "SIP"],
+      "url": "https://www.fundswap.com.tw/ARGG"
+    }
+  ]
+}
+```
+
+---
+
+### 2. 依持股搜尋基金
+
+搜尋持有特定公司股票的基金，依持股佔比排序。適合查「哪些基金有持有 NVIDIA？」這類問題。
+
+```
+GET /api/search-by-holding
+```
+
+| 參數 | 必填 | 說明 | 範例 |
+|------|------|------|------|
+| stockName | 是 | 股票/公司名稱，多個用逗號分隔 | `NVIDIA,台積電` |
+| investmentTarget | 否 | 限定基金類型 | `股票型` |
+| limit | 否 | 回傳筆數（預設 10，最多 20） | `15` |
+
+**範例：**
+```
+GET /api/search-by-holding?stockName=NVIDIA,台積電
+GET /api/search-by-holding?stockName=TSMC&investmentTarget=股票型&limit=5
+```
+
+**回傳：**
+```json
+{
+  "query": "NVIDIA,台積電",
+  "total": 38,
+  "funds": [
+    {
+      "mfxId": "ED32",
+      "fundShortName": "某科技基金...",
+      "investmentTarget": "股票型",
+      "riskLevel": 4,
+      "rateOfReturn1Year": 25.6,
+      "matchedHoldings": [
+        { "stockName": "NVIDIA CORP", "holdingRatio": 8.52 },
+        { "stockName": "台灣積體電路製造", "holdingRatio": 5.31 }
+      ],
+      "totalMatchedRatio": 13.83,
+      "url": "https://www.fundswap.com.tw/ED32"
+    }
+  ]
+}
+```
+
+---
+
+### 3. 基金詳情
+
+查詢單一基金的完整資料，包含績效、風險指標、前十大持股。
+
+```
+GET /api/fund-detail
+```
+
+| 參數 | 必填 | 說明 | 範例 |
+|------|------|------|------|
+| mfxId | 是 | 基金代碼 | `ARGG` |
+
+**範例：**
+```
+GET /api/fund-detail?mfxId=ARGG
+```
+
+**回傳：**
+```json
+{
+  "mfxId": "ARGG",
+  "fundShortName": "富蘭克林坦伯頓全球投資系列...",
+  "investmentTarget": "股票型",
+  "fundNameCategory": "科技",
+  "riskLevel": 4,
+  "generalIssuer": "富蘭克林",
+  "investmentArea": "全球",
+  "dividendFrequency": "不配息",
+  "costPerformanceValue": 0.85,
+  "dividendAnnualizedYield": null,
+  "dividendAnnualRateOfReturn": null,
+  "returns": {
+    "3m": 5.12,
+    "6m": 10.34,
+    "1y": 15.23,
+    "2y": 28.45,
+    "3y": 32.56,
+    "5y": 68.90
+  },
+  "annualizedStandardDeviation": 18.5,
+  "stockTop": [
+    { "stockName": "NVIDIA CORP", "holdingRatio": 8.52 },
+    { "stockName": "APPLE INC", "holdingRatio": 6.21 }
+  ],
+  "url": "https://www.fundswap.com.tw/ARGG"
+}
+```
+
+---
+
+### 4. 基金比較
+
+比較 2~5 檔基金的績效與風險指標。
+
+```
+POST /api/compare-funds
+Content-Type: application/json
+```
+
+**Request Body：**
+```json
+{
+  "mfx_ids": ["ARGG", "ED32", "B1F3"]
+}
+```
+
+**回傳：**
+```json
+{
+  "notFound": [],
+  "funds": [
+    {
+      "mfxId": "ARGG",
+      "fundShortName": "...",
+      "riskLevel": 4,
+      "returns": { "3m": 5.12, "6m": 10.34, "1y": 15.23, "2y": 28.45, "3y": 32.56, "5y": 68.90 },
+      "annualizedStandardDeviation": 18.5,
+      "url": "https://www.fundswap.com.tw/ARGG"
+    }
+  ]
+}
+```
+
+---
+
+### 5. 績效排行
+
+查詢基金績效排行榜。
+
+```
+GET /api/top-performers
+```
+
+| 參數 | 必填 | 說明 | 範例 |
+|------|------|------|------|
+| investmentTarget | 否 | 基金類型 | `股票型` |
+| fundNameCategory | 否 | 基金分類 | `科技` |
+| period | 否 | 排行期間（預設 1y） | `3m` / `6m` / `1y` / `2y` / `3y` / `5y` |
+| limit | 否 | 回傳筆數（預設 10，最多 20） | `10` |
+
+**範例：**
+```
+GET /api/top-performers?investmentTarget=股票型&period=1y&limit=10
+GET /api/top-performers?fundNameCategory=科技&period=3m
+```
+
+**回傳：**
+```json
+{
+  "period": "1y",
+  "total": 523,
+  "funds": [
+    {
+      "rank": 1,
+      "mfxId": "ED32",
+      "fundShortName": "...",
+      "investmentTarget": "股票型",
+      "riskLevel": 4,
+      "returns": { "3m": 12.5, "6m": 22.1, "1y": 45.3, "2y": 78.2, "3y": 110.5, "5y": 205.3 },
+      "url": "https://www.fundswap.com.tw/ED32"
+    }
+  ]
+}
+```
+
+---
 
 ## 在 AI 助手中使用
 
-### Claude Desktop
+### ChatGPT (GPT Actions)
+
+透過 REST API 搭配 OpenAPI spec 接入 ChatGPT Actions。
+
+OpenAPI 規格：`https://fundswap-chatgpt-app-1.vercel.app/openapi.json`
+
+### Claude Desktop (MCP Server)
 
 在 `claude_desktop_config.json` 加入：
 
@@ -76,23 +283,46 @@ OpenAPI 規格：`/openapi.json`
 }
 ```
 
-### ChatGPT
+MCP Server 提供的 Tools：
 
-透過 REST API 搭配 OpenAPI spec 接入 ChatGPT Actions。
+| Tool | 說明 |
+|------|------|
+| `search_funds` | 搜尋基金（同 /api/search-funds） |
+| `get_fund_detail` | 基金詳情（同 /api/fund-detail） |
+| `compare_funds` | 比較基金（同 /api/compare-funds） |
+| `get_top_performers` | 績效排行（同 /api/top-performers） |
+
+---
+
+## Tech Stack
+
+- **TypeScript** + **Node.js** (ES2022)
+- **@modelcontextprotocol/sdk** — MCP Server
+- **Zod** — 參數驗證
+- **Vercel** — Serverless API 部署
 
 ## 專案結構
 
 ```
 ├── api/                    # Vercel Serverless API 路由
+│   ├── search-funds.ts     # 搜尋基金
+│   ├── search-by-holding.ts # 依持股搜尋
+│   ├── fund-detail.ts      # 基金詳情
+│   ├── compare-funds.ts    # 基金比較
+│   └── top-performers.ts   # 績效排行
 ├── src/
 │   ├── data/fund-loader.ts # 核心資料載入與篩選邏輯
 │   ├── tools/              # MCP Tool 實作
 │   └── server.ts           # MCP Server 進入點
 ├── data/
-│   └── funds.json          # 基金資料 (~1,086 檔)
+│   ├── funds.json          # 精簡版基金資料 (~2MB, 1,086 檔)
+│   └── funds-sample.json   # 原始完整資料 (~6MB)
+├── scripts/
+│   ├── slim-data.cjs       # JSON 精簡腳本
+│   └── csv-to-json.ts      # CSV 轉 JSON 工具
 ├── public/
 │   └── openapi.json        # OpenAPI 3.1 規格
-└── scripts/                # 資料轉換工具
+└── vercel.json             # Vercel 部署設定
 ```
 
 ## License
