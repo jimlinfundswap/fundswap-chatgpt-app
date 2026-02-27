@@ -147,6 +147,9 @@ export function getTopPerformers(
     dividendFrequency?: string;
     investmentArea?: string;
     maxRiskLevel?: number;
+    returnFilterPeriod?: string;
+    returnFilterMin?: number;
+    returnFilterMax?: number;
   },
   sortBy: string = "1y",
   limit: number = 10
@@ -179,6 +182,20 @@ export function getTopPerformers(
 
   if (filters.maxRiskLevel) {
     results = results.filter((f) => f.riskLevel <= filters.maxRiskLevel!);
+  }
+
+  // 回報區間篩選：例如 returnFilterPeriod=3m, returnFilterMax=0 → 只留 3 個月報酬 ≤ 0 的基金
+  if (filters.returnFilterPeriod) {
+    const filterKey = SORT_KEY_MAP[filters.returnFilterPeriod];
+    if (filterKey) {
+      results = results.filter((f) => {
+        const v = f[filterKey];
+        if (typeof v !== "number") return false;
+        if (filters.returnFilterMin != null && v < filters.returnFilterMin) return false;
+        if (filters.returnFilterMax != null && v > filters.returnFilterMax) return false;
+        return true;
+      });
+    }
   }
 
   const sortKey = SORT_KEY_MAP[sortBy];

@@ -15,6 +15,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     sortBy = "1y",
     period,
     limit = "10",
+    returnFilterPeriod,
+    returnFilterMin,
+    returnFilterMax,
   } = req.query;
 
   // 向下相容：舊的 period 參數仍可用，但優先使用 sortBy
@@ -28,6 +31,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       dividendFrequency: asString(dividendFrequency),
       investmentArea: asString(investmentArea),
       maxRiskLevel: maxRiskLevel ? Number(maxRiskLevel) : undefined,
+      returnFilterPeriod: asString(returnFilterPeriod),
+      returnFilterMin: returnFilterMin ? Number(returnFilterMin) : undefined,
+      returnFilterMax: returnFilterMax ? Number(returnFilterMax) : undefined,
     },
     sortByStr,
     limitNum

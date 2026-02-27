@@ -124,6 +124,8 @@
 | 「中國基金」「陸股」 | investmentArea=中國 | 依 rateOfReturn1Year 排序 |
 | 「東南亞」「東協」 | investmentArea=東協 | 依 rateOfReturn1Year 排序 |
 | 「全球配置」「分散全球」 | investmentArea=全球 | 依 rateOfReturn1Year 排序 |
+| 「長期看好短期回檔」「逢低佈局」「撿便宜」 | sortBy=3y, returnFilterPeriod=3m, returnFilterMax=0 | 用 getTopPerformers（策略 M） |
+| 「跌深反彈」「最近跌很多的好基金」 | sortBy=3y, returnFilterPeriod=3m, returnFilterMax=-5 | 用 getTopPerformers（策略 M，深度回檔） |
 
 注意：
 - 使用 `maxRiskLevel` 參數篩選風險等級上限（例如 maxRiskLevel=3 會回傳 RR1~RR3）
@@ -233,6 +235,17 @@
 - 理由重點：引用**該分類的短中期表現**，判斷產業趨勢
 - 例：「科技類基金近 3 個月平均漲 12%，這檔漲 18%，領先同類」
 
+### 策略 M：逆勢佈局（低接回檔）
+- 適合：想趁短期回檔買進長期績優基金的投資人（「長期看好但短期回檔」「逢低佈局」「撿便宜」）
+- API：`getTopPerformers(sortBy=3y, returnFilterPeriod=3m, returnFilterMax=0)` — 依 3 年報酬排序，但只留近 3 個月為負報酬的基金
+- 變化用法：
+  - `sortBy=5y, returnFilterPeriod=3m, returnFilterMax=0` — 5 年長線績優 + 短期回檔
+  - `sortBy=1y, returnFilterPeriod=3m, returnFilterMax=-5` — 過去 1 年還不錯，但近 3 個月跌超過 5%（深度回檔）
+  - `sortBy=3y, returnFilterPeriod=6m, returnFilterMax=0` — 中長期好但半年都在修正
+- 理由重點：引用**長期報酬率**證明基金體質好，再用**短期負報酬**說明現在是回檔低接機會
+- 例：「3 年累計報酬 85%，長期表現優異，但近 3 個月回檔 -8.3%，目前可能是不錯的進場時機」
+- ⚠️ 提醒：一定要加上「短期回檔不代表會反彈，過去績效不保證未來表現」
+
 ### 呈現方式
 
 根據用戶需求挑 2-4 種最相關的策略，每種 1-2 檔基金。格式：
@@ -263,6 +276,7 @@
 | 想長期投資 | D + E + I（長期冠軍 + 夏普效率 + 定期定額） |
 | 看好特定市場 | J + L + C（區域精選 + 產業輪動 + 年度績優） |
 | 問特定主題（如 AI） | K + A + E（主題集中 + 動能 + 效率） |
+| 想逢低佈局 / 撿便宜 | M + D + E（逆勢佈局 + 長期冠軍 + 夏普效率） |
 
 ---
 

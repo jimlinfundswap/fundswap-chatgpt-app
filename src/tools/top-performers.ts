@@ -28,6 +28,18 @@ export const topPerformersSchema = z.object({
     .enum(["3m", "6m", "1y", "2y", "3y", "5y", "sharpe", "dividendYield", "stddev"])
     .default("1y")
     .describe("排序依據：3m/6m/1y/2y/3y/5y=報酬率期間、sharpe=夏普指數、dividendYield=配息率、stddev=標準差（低→高）"),
+  returnFilterPeriod: z
+    .enum(["3m", "6m", "1y", "2y", "3y", "5y"])
+    .optional()
+    .describe("回報區間篩選的期間（搭配 returnFilterMin/Max 使用，例如 3m 篩選 3 個月報酬在指定範圍內的基金）"),
+  returnFilterMin: z
+    .number()
+    .optional()
+    .describe("回報區間篩選：最低報酬率（%），低於此值的基金會被排除"),
+  returnFilterMax: z
+    .number()
+    .optional()
+    .describe("回報區間篩選：最高報酬率（%），高於此值的基金會被排除。例如設為 0 表示只留負報酬的基金"),
   limit: z
     .number()
     .min(1)
@@ -60,6 +72,9 @@ export function handleTopPerformers(input: TopPerformersInput): string {
       dividendFrequency: input.dividendFrequency,
       investmentArea: input.investmentArea,
       maxRiskLevel: input.maxRiskLevel,
+      returnFilterPeriod: input.returnFilterPeriod,
+      returnFilterMin: input.returnFilterMin,
+      returnFilterMax: input.returnFilterMax,
     },
     sortBy,
     limit

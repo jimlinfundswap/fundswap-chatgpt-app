@@ -354,6 +354,27 @@
             }
           },
           {
+            "name": "returnFilterPeriod",
+            "in": "query",
+            "description": "回報區間篩選的期間，搭配 returnFilterMin/returnFilterMax 使用。例如設為 3m 可篩選 3 個月報酬在指定範圍的基金（逆勢佈局：sortBy=3y + returnFilterPeriod=3m + returnFilterMax=0 → 長期績優但近期回檔的基金）",
+            "schema": {
+              "type": "string",
+              "enum": ["3m", "6m", "1y", "2y", "3y", "5y"]
+            }
+          },
+          {
+            "name": "returnFilterMin",
+            "in": "query",
+            "description": "回報區間篩選：最低報酬率（%），低於此值的基金會被排除",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "returnFilterMax",
+            "in": "query",
+            "description": "回報區間篩選：最高報酬率（%），高於此值的基金會被排除。例如設為 0 表示只留近期負報酬的基金",
+            "schema": { "type": "number" }
+          },
+          {
             "name": "limit",
             "in": "query",
             "description": "顯示筆數（預設 10，最多 20）",
