@@ -9,34 +9,46 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const {
     investmentTarget,
     fundNameCategory,
-    period = "1y",
+    dividendFrequency,
+    investmentArea,
+    maxRiskLevel,
+    sortBy = "1y",
+    period,
     limit = "10",
   } = req.query;
 
-  const periodStr = Array.isArray(period) ? period[0] : period;
+  // 向下相容：舊的 period 參數仍可用，但優先使用 sortBy
+  const sortByStr = asString(sortBy) ?? asString(period) ?? "1y";
   const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 20);
 
   const results = getTopPerformers(
     {
       investmentTarget: asString(investmentTarget),
       fundNameCategory: asString(fundNameCategory),
+      dividendFrequency: asString(dividendFrequency),
+      investmentArea: asString(investmentArea),
+      maxRiskLevel: maxRiskLevel ? Number(maxRiskLevel) : undefined,
     },
-    periodStr,
+    sortByStr,
     limitNum
   );
 
   return res.status(200).json({
-    period: periodStr,
+    sortBy: sortByStr,
     total: results.length,
     funds: results.map((f, i) => ({
       rank: i + 1,
       mfxId: f.mfxId,
       fundShortName: f.fundShortName,
       investmentTarget: f.investmentTarget,
+      investmentArea: f.investmentArea,
       fundNameCategory: f.fundNameCategory,
       riskLevel: f.riskLevel,
       generalIssuer: f.generalIssuer,
       dividendFrequency: f.dividendFrequency,
+      costPerformanceValue: f.costPerformanceValue,
+      annualizedStandardDeviation: f.annualizedStandardDeviation,
+      dividendAnnualizedYield: f.dividendAnnualizedYield,
       returns: {
         "3m": f.rateOfReturn3Months,
         "6m": f.rateOfReturn6Months,

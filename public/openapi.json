@@ -307,8 +307,8 @@
     "/api/top-performers": {
       "get": {
         "operationId": "getTopPerformers",
-        "summary": "基金績效排行",
-        "description": "查詢基金績效排行榜，可依基金類型、基金分類與期間篩選。",
+        "summary": "基金排行榜（支援多種排序）",
+        "description": "查詢基金排行榜，可依報酬率、夏普指數、配息率、標準差排序，並可篩選類型、分類、區域、風險等級、配息頻率。",
         "parameters": [
           {
             "name": "investmentTarget",
@@ -326,12 +326,30 @@
             "schema": { "type": "string" }
           },
           {
-            "name": "period",
+            "name": "investmentArea",
             "in": "query",
-            "description": "排行期間（預設 1 年）",
+            "description": "投資區域（如：全球、美國、日本、台灣、新興市場）",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "dividendFrequency",
+            "in": "query",
+            "description": "配息頻率（如：月配息、季配息、年配息、不配息）",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "maxRiskLevel",
+            "in": "query",
+            "description": "最高風險等級（回傳 ≤ 此等級的基金）",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 5 }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "排序依據：3m/6m/1y/2y/3y/5y=依報酬率排序、sharpe=依夏普指數（高→低）、dividendYield=依配息率（高→低）、stddev=依年化標準差（低→高，波動最小優先）",
             "schema": {
               "type": "string",
-              "enum": ["3m", "6m", "1y", "2y", "3y", "5y"],
+              "enum": ["3m", "6m", "1y", "2y", "3y", "5y", "sharpe", "dividendYield", "stddev"],
               "default": "1y"
             }
           },
@@ -344,13 +362,13 @@
         ],
         "responses": {
           "200": {
-            "description": "績效排行結果",
+            "description": "排行結果",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "period": { "type": "string" },
+                    "sortBy": { "type": "string" },
                     "total": { "type": "integer" },
                     "funds": {
                       "type": "array",
@@ -512,10 +530,14 @@
           "mfxId": { "type": "string" },
           "fundShortName": { "type": "string" },
           "investmentTarget": { "type": "string" },
+          "investmentArea": { "type": "string" },
           "fundNameCategory": { "type": "string" },
           "riskLevel": { "type": "integer" },
           "generalIssuer": { "type": "string" },
           "dividendFrequency": { "type": "string" },
+          "costPerformanceValue": { "type": "number", "description": "夏普指數（越高越好，衡量風險調整後報酬）" },
+          "annualizedStandardDeviation": { "type": "number", "description": "年化標準差（波動度，越低越穩定）" },
+          "dividendAnnualizedYield": { "type": "number", "nullable": true, "description": "年化配息率（%）" },
           "returns": {
             "type": "object",
             "properties": {

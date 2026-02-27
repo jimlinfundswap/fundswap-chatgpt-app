@@ -125,18 +125,30 @@ export function deduplicateFunds<T>(items: T[], getFund: (item: T) => Fund): T[]
   return result;
 }
 
-const PERIOD_KEY_MAP: Record<string, keyof Fund> = {
+const SORT_KEY_MAP: Record<string, keyof Fund> = {
   "3m": "rateOfReturn3Months",
   "6m": "rateOfReturn6Months",
   "1y": "rateOfReturn1Year",
   "2y": "rateOfReturn2Year",
   "3y": "rateOfReturn3Years",
   "5y": "rateOfReturn5Years",
+  sharpe: "costPerformanceValue",
+  dividendYield: "dividendAnnualizedYield",
+  stddev: "annualizedStandardDeviation",
 };
 
+// stddev 排序為低→高（波動越低越好），其他都是高→低
+const ASC_SORT_KEYS = new Set(["stddev"]);
+
 export function getTopPerformers(
-  filters: { investmentTarget?: string; fundNameCategory?: string },
-  period: string = "1y",
+  filters: {
+    investmentTarget?: string;
+    fundNameCategory?: string;
+    dividendFrequency?: string;
+    investmentArea?: string;
+    maxRiskLevel?: number;
+  },
+  sortBy: string = "1y",
   limit: number = 10
 ): Fund[] {
   let results = loadFunds();
@@ -153,12 +165,37 @@ export function getTopPerformers(
     );
   }
 
-  const periodKey = PERIOD_KEY_MAP[period];
-  if (!periodKey) return [];
+  if (filters.dividendFrequency) {
+    results = results.filter(
+      (f) => f.dividendFrequency === filters.dividendFrequency
+    );
+  }
+
+  if (filters.investmentArea) {
+    results = results.filter((f) =>
+      f.investmentArea.includes(filters.investmentArea!)
+    );
+  }
+
+  if (filters.maxRiskLevel) {
+    results = results.filter((f) => f.riskLevel <= filters.maxRiskLevel!);
+  }
+
+  const sortKey = SORT_KEY_MAP[sortBy];
+  if (!sortKey) return [];
+
+  const asc = ASC_SORT_KEYS.has(sortBy);
 
   const sorted = results
-    .filter((f) => typeof f[periodKey] === "number")
-    .sort((a, b) => (b[periodKey] as number) - (a[periodKey] as number));
+    .filter((f) => {
+      const v = f[sortKey];
+      return typeof v === "number" && v !== 0;
+    })
+    .sort((a, b) =>
+      asc
+        ? (a[sortKey] as number) - (b[sortKey] as number)
+        : (b[sortKey] as number) - (a[sortKey] as number)
+    );
 
   return deduplicateFunds(sorted, (f) => f).slice(0, limit);
 }
@@ -254,7 +291,7 @@ export function getCategoryStats(fund: Fund): CategoryStats {
   const periods = ["3m", "6m", "1y", "2y", "3y", "5y"] as const;
 
   const rankings = periods.map((period) => {
-    const key = PERIOD_KEY_MAP[period];
+    const key = SORT_KEY_MAP[period];
     const withValues = sameCat.filter((f) => typeof f[key] === "number");
     const sorted = [...withValues].sort(
       (a, b) => (b[key] as number) - (a[key] as number)

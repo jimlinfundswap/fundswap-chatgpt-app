@@ -60,7 +60,7 @@ server.tool(
 // Tool: get_top_performers
 server.tool(
   "get_top_performers",
-  "查詢基金績效排行榜，可依基金類型、基金分類與期間篩選。",
+  "基金排行榜：可依報酬率（3m/6m/1y/2y/3y/5y）、夏普指數（sharpe）、配息率（dividendYield）、標準差（stddev）排序，並支援類型、分類、區域、風險等級、配息頻率篩選。",
   topPerformersSchema.shape,
   async (input) => ({
     content: [{ type: "text", text: handleTopPerformers(input) }],
