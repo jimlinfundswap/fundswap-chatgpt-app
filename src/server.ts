@@ -11,6 +11,14 @@ import {
   topPerformersSchema,
   handleTopPerformers,
 } from "./tools/top-performers.js";
+import {
+  holdingsOverlapSchema,
+  handleHoldingsOverlap,
+} from "./tools/holdings-overlap.js";
+import {
+  complementSuggestionsSchema,
+  handleComplementSuggestions,
+} from "./tools/complement-suggestions.js";
 
 const server = new McpServer({
   name: "FundSwap",
@@ -56,6 +64,26 @@ server.tool(
   topPerformersSchema.shape,
   async (input) => ({
     content: [{ type: "text", text: handleTopPerformers(input) }],
+  })
+);
+
+// Tool: holdings_overlap
+server.tool(
+  "holdings_overlap",
+  "檢查 2-5 檔基金的持股重疊情況，找出共同持股、計算重疊比例，並提供集中度警示。",
+  holdingsOverlapSchema.shape,
+  async (input) => ({
+    content: [{ type: "text", text: handleHoldingsOverlap(input) }],
+  })
+);
+
+// Tool: complement_suggestions
+server.tool(
+  "complement_suggestions",
+  "根據已選基金，建議互補的搭配基金（不同類型、區域、風險等級），幫助建立分散的投資組合。",
+  complementSuggestionsSchema.shape,
+  async (input) => ({
+    content: [{ type: "text", text: handleComplementSuggestions(input) }],
   })
 );
 

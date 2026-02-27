@@ -60,6 +60,12 @@ export const searchFundsSchema = z.object({
     .enum(["不配息", "月配息", "季配息", "半年配息", "年配息", "未固定配息"])
     .optional()
     .describe("配息頻率"),
+  maxRiskLevel: z
+    .number()
+    .min(1)
+    .max(5)
+    .optional()
+    .describe("最高風險等級（回傳 ≤ 此等級的基金，例如 3 表示只要 RR1~RR3）"),
 });
 
 export type SearchFundsInput = z.infer<typeof searchFundsSchema>;
@@ -69,6 +75,7 @@ export function handleSearchFunds(input: SearchFundsInput): string {
     keyword: input.keyword,
     investmentTarget: input.investmentTarget,
     riskLevel: input.riskLevel,
+    maxRiskLevel: input.maxRiskLevel,
     investmentArea: input.investmentArea,
     fundNameCategory: input.fundNameCategory,
     dividendFrequency: input.dividendFrequency,

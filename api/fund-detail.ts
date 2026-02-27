@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getFundById, getFundUrl } from "../src/data/fund-loader.js";
+import { getFundById, getFundUrl, getCategoryStats } from "../src/data/fund-loader.js";
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
@@ -19,6 +19,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   if (!fund) {
     return res.status(404).json({ error: `Fund ${mfxId} not found` });
   }
+
+  const stats = getCategoryStats(fund);
 
   return res.status(200).json({
     mfxId: fund.mfxId,
@@ -45,6 +47,26 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       stockName: s.stock_name,
       holdingRatio: s.holding_ratio,
     })),
+    categoryContext: {
+      category: stats.category,
+      totalInCategory: stats.totalInCategory,
+      rankings: stats.rankings
+        .filter((r) => r.rank > 0)
+        .map((r) => ({
+          period: r.period,
+          rank: r.rank,
+          percentile: r.percentile,
+          categoryAvg: Number(r.categoryAvg.toFixed(2)),
+          fundReturn: Number(r.fundReturn.toFixed(2)),
+        })),
+      riskComparison: {
+        categoryAvgStdDev: Number(
+          stats.riskComparison.categoryAvgStdDev.toFixed(2)
+        ),
+        fundStdDev: Number(stats.riskComparison.fundStdDev.toFixed(2)),
+        interpretation: stats.riskComparison.interpretation,
+      },
+    },
     url: getFundUrl(fund.mfxId),
   });
 }

@@ -78,6 +78,12 @@
               "type": "string",
               "enum": ["PUR", "SIP", "SWI", "SWO", "RDM"]
             }
+          },
+          {
+            "name": "maxRiskLevel",
+            "in": "query",
+            "description": "最高風險等級（回傳 ≤ 此等級的基金，例如 3 表示只要 RR1~RR3）",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 5 }
           }
         ],
         "responses": {
@@ -232,6 +238,72 @@
         }
       }
     },
+    "/api/holdings-overlap": {
+      "post": {
+        "operationId": "holdingsOverlap",
+        "summary": "持股重疊分析",
+        "description": "分析 2-5 檔基金的持股重疊情況，找出共同持股、計算重疊比例，並提供集中度警示。適合檢查投資組合的分散度。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["mfx_ids"],
+                "properties": {
+                  "mfx_ids": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "minItems": 2,
+                    "maxItems": 5,
+                    "description": "要分析的基金代碼（2-5 檔）"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "持股重疊分析結果",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HoldingsOverlap" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/complement-suggestions": {
+      "get": {
+        "operationId": "complementSuggestions",
+        "summary": "組合搭配建議",
+        "description": "根據已選基金的特性（類型、區域、風險等級），建議互補的搭配基金，幫助建立分散的投資組合。",
+        "parameters": [
+          {
+            "name": "mfxId",
+            "in": "query",
+            "required": true,
+            "description": "已選定的基金代碼",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "組合搭配建議",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ComplementSuggestions" }
+              }
+            }
+          },
+          "404": {
+            "description": "找不到該基金"
+          }
+        }
+      }
+    },
     "/api/top-performers": {
       "get": {
         "operationId": "getTopPerformers",
@@ -348,6 +420,35 @@
               }
             }
           },
+          "categoryContext": {
+            "type": "object",
+            "description": "同類基金統計比較",
+            "properties": {
+              "category": { "type": "string", "description": "基金分類名稱" },
+              "totalInCategory": { "type": "integer", "description": "同類基金總數" },
+              "rankings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "period": { "type": "string" },
+                    "rank": { "type": "integer", "description": "排名（1 為最佳）" },
+                    "percentile": { "type": "integer", "description": "前百分之幾" },
+                    "categoryAvg": { "type": "number", "description": "同類平均報酬率" },
+                    "fundReturn": { "type": "number", "description": "本基金報酬率" }
+                  }
+                }
+              },
+              "riskComparison": {
+                "type": "object",
+                "properties": {
+                  "categoryAvgStdDev": { "type": "number", "description": "同類平均年化標準差" },
+                  "fundStdDev": { "type": "number", "description": "本基金年化標準差" },
+                  "interpretation": { "type": "string", "description": "風險解讀（如：低於同類平均）" }
+                }
+              }
+            }
+          },
           "url": { "type": "string" }
         }
       },
@@ -427,6 +528,93 @@
             }
           },
           "url": { "type": "string" }
+        }
+      },
+      "HoldingsOverlap": {
+        "type": "object",
+        "properties": {
+          "funds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "mfxId": { "type": "string" },
+                "fundShortName": { "type": "string" },
+                "holdingCount": { "type": "integer", "description": "持股數量" },
+                "url": { "type": "string" }
+              }
+            }
+          },
+          "overlapRatio": { "type": "number", "description": "持股重疊比例（百分比）" },
+          "concentrationWarning": { "type": "string", "nullable": true, "description": "集中度警示（>50% 高度重疊、>30% 中度重疊，否則 null）" },
+          "sharedHoldings": {
+            "type": "array",
+            "description": "被 2 檔以上基金同時持有的股票",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stockName": { "type": "string" },
+                "heldByCount": { "type": "integer", "description": "被幾檔基金持有" },
+                "avgHoldingRatio": { "type": "number", "description": "平均持股比例" },
+                "details": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "mfxId": { "type": "string" },
+                      "holdingRatio": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ComplementSuggestions": {
+        "type": "object",
+        "properties": {
+          "baseFund": {
+            "type": "object",
+            "description": "已選的基金",
+            "properties": {
+              "mfxId": { "type": "string" },
+              "fundShortName": { "type": "string" },
+              "investmentTarget": { "type": "string" },
+              "investmentArea": { "type": "string" },
+              "riskLevel": { "type": "integer" },
+              "fundNameCategory": { "type": "string" },
+              "url": { "type": "string" }
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "description": "搭配建議清單",
+            "items": {
+              "type": "object",
+              "properties": {
+                "reason": { "type": "string", "description": "建議理由" },
+                "recommendedFunds": {
+                  "type": "array",
+                  "description": "推薦的互補基金（最多 3 檔）",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "mfxId": { "type": "string" },
+                      "fundShortName": { "type": "string" },
+                      "investmentTarget": { "type": "string" },
+                      "fundNameCategory": { "type": "string" },
+                      "riskLevel": { "type": "integer" },
+                      "investmentArea": { "type": "string" },
+                      "dividendFrequency": { "type": "string" },
+                      "rateOfReturn1Year": { "type": "number" },
+                      "url": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

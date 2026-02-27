@@ -38,6 +38,7 @@ export function searchFunds(query: {
   keyword?: string;
   investmentTarget?: string;
   riskLevel?: number;
+  maxRiskLevel?: number;
   investmentArea?: string;
   fundNameCategory?: string;
   dividendFrequency?: string;
@@ -63,6 +64,10 @@ export function searchFunds(query: {
 
   if (query.riskLevel) {
     results = results.filter((f) => f.riskLevel === query.riskLevel);
+  }
+
+  if (query.maxRiskLevel) {
+    results = results.filter((f) => f.riskLevel <= query.maxRiskLevel!);
   }
 
   if (query.investmentArea) {
@@ -195,6 +200,254 @@ export function formatFundSummary(fund: Fund): string {
   ].join("\n");
 }
 
+// === Feature 2: 數字解讀 — 同類排名與風險比較 ===
+
+export interface CategoryStats {
+  category: string;
+  totalInCategory: number;
+  rankings: {
+    period: string;
+    rank: number;
+    percentile: number;
+    categoryAvg: number;
+    fundReturn: number;
+  }[];
+  riskComparison: {
+    categoryAvgStdDev: number;
+    fundStdDev: number;
+    interpretation: string;
+  };
+}
+
+export function getCategoryStats(fund: Fund): CategoryStats {
+  const sameCat = loadFunds().filter(
+    (f) => f.fundNameCategory === fund.fundNameCategory
+  );
+  const totalInCategory = sameCat.length;
+
+  const periods = ["3m", "6m", "1y", "2y", "3y", "5y"] as const;
+
+  const rankings = periods.map((period) => {
+    const key = PERIOD_KEY_MAP[period];
+    const withValues = sameCat.filter((f) => typeof f[key] === "number");
+    const sorted = [...withValues].sort(
+      (a, b) => (b[key] as number) - (a[key] as number)
+    );
+    const rank = sorted.findIndex((f) => f.mfxId === fund.mfxId) + 1;
+    const avg =
+      withValues.reduce((sum, f) => sum + (f[key] as number), 0) /
+      (withValues.length || 1);
+    const fundReturn = (fund[key] as number) ?? 0;
+    const percentile =
+      rank > 0 ? Math.round((rank / withValues.length) * 100) : 0;
+
+    return { period, rank, percentile, categoryAvg: avg, fundReturn };
+  });
+
+  const stdDevValues = sameCat
+    .filter((f) => typeof f.annualizedStandardDeviation === "number")
+    .map((f) => f.annualizedStandardDeviation);
+  const categoryAvgStdDev =
+    stdDevValues.reduce((sum, v) => sum + v, 0) / (stdDevValues.length || 1);
+  const fundStdDev = fund.annualizedStandardDeviation ?? 0;
+  const diff = fundStdDev - categoryAvgStdDev;
+  let interpretation: string;
+  if (Math.abs(diff) < 1) {
+    interpretation = "接近同類平均";
+  } else if (diff < 0) {
+    interpretation = "低於同類平均（波動較小）";
+  } else {
+    interpretation = "高於同類平均（波動較大）";
+  }
+
+  return {
+    category: fund.fundNameCategory,
+    totalInCategory,
+    rankings,
+    riskComparison: { categoryAvgStdDev, fundStdDev, interpretation },
+  };
+}
+
+// === Feature 4: 持股重疊檢查 ===
+
+export interface OverlapStock {
+  stockName: string;
+  funds: { mfxId: string; fundShortName: string; holdingRatio: number }[];
+  avgHoldingRatio: number;
+}
+
+export interface HoldingsOverlapResult {
+  funds: { mfxId: string; fundShortName: string; holdingCount: number }[];
+  sharedHoldings: OverlapStock[];
+  overlapRatio: number;
+  concentrationWarning: string | null;
+}
+
+export function analyzeHoldingsOverlap(
+  mfxIds: string[]
+): HoldingsOverlapResult | null {
+  const foundFunds = mfxIds
+    .map((id) => getFundById(id))
+    .filter(Boolean) as Fund[];
+  if (foundFunds.length < 2) return null;
+
+  const stockMap = new Map<
+    string,
+    { mfxId: string; fundShortName: string; holdingRatio: number }[]
+  >();
+
+  for (const fund of foundFunds) {
+    for (const stock of fund.stockTop) {
+      const name = stock.stock_name.toUpperCase().trim();
+      if (!stockMap.has(name)) {
+        stockMap.set(name, []);
+      }
+      stockMap.get(name)!.push({
+        mfxId: fund.mfxId,
+        fundShortName: fund.fundShortName,
+        holdingRatio: stock.holding_ratio,
+      });
+    }
+  }
+
+  const sharedHoldings: OverlapStock[] = [];
+  for (const [stockName, holders] of stockMap) {
+    if (holders.length >= 2) {
+      const avgHoldingRatio =
+        holders.reduce((sum, h) => sum + h.holdingRatio, 0) / holders.length;
+      sharedHoldings.push({ stockName, funds: holders, avgHoldingRatio });
+    }
+  }
+
+  sharedHoldings.sort(
+    (a, b) =>
+      b.funds.length - a.funds.length || b.avgHoldingRatio - a.avgHoldingRatio
+  );
+
+  const totalUniqueStocks = stockMap.size;
+  const overlapRatio =
+    totalUniqueStocks > 0
+      ? Number(((sharedHoldings.length / totalUniqueStocks) * 100).toFixed(1))
+      : 0;
+
+  let concentrationWarning: string | null = null;
+  if (overlapRatio > 50) {
+    concentrationWarning =
+      "高度重疊：這些基金的持股重疊超過 50%，分散效果有限，建議考慮不同類型或區域的基金。";
+  } else if (overlapRatio > 30) {
+    concentrationWarning =
+      "中度重疊：這些基金有一定程度的持股重疊，可考慮搭配不同產業或區域的基金增加分散度。";
+  }
+
+  return {
+    funds: foundFunds.map((f) => ({
+      mfxId: f.mfxId,
+      fundShortName: f.fundShortName,
+      holdingCount: f.stockTop.length,
+    })),
+    sharedHoldings: sharedHoldings.slice(0, 20),
+    overlapRatio,
+    concentrationWarning,
+  };
+}
+
+// === Feature 5: 組合搭配建議 ===
+
+export interface ComplementSuggestion {
+  reason: string;
+  searchParams: Record<string, string | number>;
+}
+
+export interface ComplementProfile {
+  baseFund: {
+    mfxId: string;
+    fundShortName: string;
+    investmentTarget: string;
+    investmentArea: string;
+    riskLevel: number;
+    fundNameCategory: string;
+  };
+  suggestions: ComplementSuggestion[];
+}
+
+export function getComplementProfile(
+  mfxId: string
+): ComplementProfile | null {
+  const fund = getFundById(mfxId);
+  if (!fund) return null;
+
+  const suggestions: ComplementSuggestion[] = [];
+
+  if (fund.investmentTarget === "股票型") {
+    suggestions.push({
+      reason:
+        "股債平衡：您選的是股票型基金，建議搭配債券型基金降低波動",
+      searchParams: {
+        investmentTarget: "債券型",
+        maxRiskLevel: Math.max(1, fund.riskLevel - 1),
+      },
+    });
+  } else if (fund.investmentTarget === "債券型") {
+    suggestions.push({
+      reason:
+        "增加成長性：您選的是債券型基金，建議搭配股票型基金提升報酬",
+      searchParams: {
+        investmentTarget: "股票型",
+        maxRiskLevel: Math.min(5, fund.riskLevel + 1),
+      },
+    });
+  }
+
+  if (fund.investmentArea !== "全球") {
+    suggestions.push({
+      reason: `區域分散：您選的基金投資${fund.investmentArea}，建議搭配不同區域`,
+      searchParams: { investmentArea: "全球" },
+    });
+  } else {
+    suggestions.push({
+      reason:
+        "區域聚焦：您選的是全球型基金，可搭配特定區域基金加強配置",
+      searchParams: { investmentArea: "美國" },
+    });
+  }
+
+  if (fund.riskLevel >= 4) {
+    suggestions.push({
+      reason: `降低風險：您選的基金風險較高(RR${fund.riskLevel})，建議搭配低風險基金穩定組合`,
+      searchParams: { maxRiskLevel: 2 },
+    });
+  }
+
+  if (fund.dividendFrequency === "不配息") {
+    suggestions.push({
+      reason: "增加現金流：您選的基金不配息，建議搭配配息型基金",
+      searchParams: { dividendFrequency: "月配息" },
+    });
+  }
+
+  if (fund.fundNameCategory === "科技") {
+    suggestions.push({
+      reason:
+        "產業分散：您選的是科技類基金，建議搭配非科技類分散風險",
+      searchParams: { fundNameCategory: "不分產業(股)" },
+    });
+  }
+
+  return {
+    baseFund: {
+      mfxId: fund.mfxId,
+      fundShortName: fund.fundShortName,
+      investmentTarget: fund.investmentTarget,
+      investmentArea: fund.investmentArea,
+      riskLevel: fund.riskLevel,
+      fundNameCategory: fund.fundNameCategory,
+    },
+    suggestions,
+  };
+}
+
+// === Formatting ===
+
 export function formatFundDetail(fund: Fund): string {
   const lines = [
     `# ${fund.fundShortName}`,
@@ -255,4 +508,46 @@ export function formatFundDetail(fund: Fund): string {
   );
 
   return lines.join("\n");
+}
+
+const PERIOD_LABEL: Record<string, string> = {
+  "3m": "3 個月",
+  "6m": "6 個月",
+  "1y": "1 年",
+  "2y": "2 年",
+  "3y": "3 年",
+  "5y": "5 年",
+};
+
+export function formatFundDetailWithContext(fund: Fund): string {
+  const base = formatFundDetail(fund);
+  const stats = getCategoryStats(fund);
+
+  const contextLines = [
+    "",
+    "## 同類比較",
+    `此基金屬於「${stats.category}」分類，共 ${stats.totalInCategory} 檔基金。`,
+    "",
+    "| 期間 | 本基金報酬 | 同類平均 | 排名 | 百分位 |",
+    "|------|-----------|---------|------|--------|",
+  ];
+
+  for (const r of stats.rankings) {
+    if (r.rank > 0) {
+      const label = PERIOD_LABEL[r.period] ?? r.period;
+      contextLines.push(
+        `| ${label} | ${r.fundReturn.toFixed(2)}% | ${r.categoryAvg.toFixed(2)}% | ${r.rank}/${stats.totalInCategory} | 前 ${r.percentile}% |`
+      );
+    }
+  }
+
+  contextLines.push(
+    "",
+    "## 風險解讀",
+    "| 指標 | 本基金 | 同類平均 | 解讀 |",
+    "|------|--------|---------|------|",
+    `| 年化標準差 | ${stats.riskComparison.fundStdDev.toFixed(2)}% | ${stats.riskComparison.categoryAvgStdDev.toFixed(2)}% | ${stats.riskComparison.interpretation} |`
+  );
+
+  return base + "\n" + contextLines.join("\n");
 }
