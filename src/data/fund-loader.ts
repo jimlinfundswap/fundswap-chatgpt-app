@@ -94,11 +94,35 @@ export function searchFunds(query: {
     );
   }
 
-  return results;
+  return deduplicateFunds(results, (f) => f);
 }
 
 export function getFundById(mfxId: string): Fund | undefined {
   return loadFunds().find((f) => f.mfxId === mfxId);
+}
+
+// === 多級別基金去重 ===
+// 同一檔基金常有多個幣別/級別（如 美元、新台幣、累積型、配息型），
+// 持股（stockTop）完全相同。搜尋結果只保留每組的第一筆（排序最佳者）。
+
+function getFundFingerprint(fund: Fund): string {
+  return fund.stockTop
+    .map((s) => s.stock_name)
+    .sort()
+    .join("|");
+}
+
+export function deduplicateFunds<T>(items: T[], getFund: (item: T) => Fund): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const item of items) {
+    const fp = getFundFingerprint(getFund(item));
+    if (!seen.has(fp)) {
+      seen.add(fp);
+      result.push(item);
+    }
+  }
+  return result;
 }
 
 const PERIOD_KEY_MAP: Record<string, keyof Fund> = {
@@ -132,10 +156,11 @@ export function getTopPerformers(
   const periodKey = PERIOD_KEY_MAP[period];
   if (!periodKey) return [];
 
-  return results
+  const sorted = results
     .filter((f) => typeof f[periodKey] === "number")
-    .sort((a, b) => (b[periodKey] as number) - (a[periodKey] as number))
-    .slice(0, limit);
+    .sort((a, b) => (b[periodKey] as number) - (a[periodKey] as number));
+
+  return deduplicateFunds(sorted, (f) => f).slice(0, limit);
 }
 
 export interface HoldingMatch {
@@ -181,8 +206,9 @@ export function searchByHolding(query: {
 
   matches.sort((a, b) => b.totalMatchedRatio - a.totalMatchedRatio);
 
+  const deduped = deduplicateFunds(matches, (m) => m.fund);
   const limit = query.limit ?? 10;
-  return matches.slice(0, limit);
+  return deduped.slice(0, limit);
 }
 
 export function getFundUrl(mfxId: string): string {
