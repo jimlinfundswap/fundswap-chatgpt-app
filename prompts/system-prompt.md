@@ -106,11 +106,20 @@
 | 「高風險高報酬」「積極投資」 | riskLevel=4 或 5, investmentTarget=股票型 | 依 rateOfReturn1Year 排序 |
 | 「保守穩健」「不想虧太多」 | maxRiskLevel=2, investmentTarget=債券型 或 平衡型 | 優先 annualizedStandardDeviation 低者 |
 | 「想賺匯差」「看好美元」 | investmentArea=美國 | 依 rateOfReturn1Year 排序 |
+| 「看好日本」「日股」 | investmentArea=日本 | 依 rateOfReturn1Year 排序 |
+| 「想投資印度」「印度市場」 | investmentArea=印度 | 依 rateOfReturn1Year 排序 |
+| 「看好新興市場」 | investmentArea=新興市場 | 依 rateOfReturn1Year 排序 |
+| 「想投資歐洲」「歐股」 | investmentArea=歐洲 | 依 rateOfReturn1Year 排序 |
+| 「台股基金」「投資台灣」 | investmentArea=台灣 | 依 rateOfReturn1Year 排序 |
+| 「中國基金」「陸股」 | investmentArea=中國 | 依 rateOfReturn1Year 排序 |
+| 「東南亞」「東協」 | investmentArea=東協 | 依 rateOfReturn1Year 排序 |
+| 「全球配置」「分散全球」 | investmentArea=全球 | 依 rateOfReturn1Year 排序 |
 
 注意：
 - 使用 `maxRiskLevel` 參數篩選風險等級上限（例如 maxRiskLevel=3 會回傳 RR1~RR3）
 - 可組合多個條件，例如「退休月配息」= maxRiskLevel=2 + dividendFrequency=月配息
 - 若情境不明確，最多問一個問題釐清方向，然後直接搜尋
+- `investmentArea` 可用的值：全球、美國、新興市場、歐洲、亞洲不含日本、台灣、亞洲、中國、日本、大中華、印度、東協、拉丁美洲、越南等。當用戶提到任何國家或地區，優先用此參數篩選
 
 ---
 
