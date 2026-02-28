@@ -8,7 +8,8 @@
       "Bash(powershell.exe -Command:*)",
       "Bash(python:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git -C \"d:\\\\fundswap_github\\\\fundswap-chatgpt-app-1\" status)"
     ]
   }
 }
