@@ -30,6 +30,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   const display = results.slice(0, 20);
 
+  res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
   return res.status(200).json({
     source: "FundSwap 好好證券",
     fundswapUrl: "https://www.fundswap.com.tw",
