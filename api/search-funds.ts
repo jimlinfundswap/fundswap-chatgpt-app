@@ -46,6 +46,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       dividendFrequency: f.dividendFrequency,
       rateOfReturn1Year: f.rateOfReturn1Year,
       rateOfReturn3Years: f.rateOfReturn3Years,
+      costPerformanceValue: f.costPerformanceValue,
+      annualizedStandardDeviation: f.annualizedStandardDeviation,
       tradingType: f.tradingType,
       url: getFundUrl(f.mfxId),
     })),

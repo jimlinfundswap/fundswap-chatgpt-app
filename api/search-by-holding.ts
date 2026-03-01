@@ -32,6 +32,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       investmentArea: r.fund.investmentArea,
       dividendFrequency: r.fund.dividendFrequency,
       rateOfReturn1Year: r.fund.rateOfReturn1Year,
+      costPerformanceValue: r.fund.costPerformanceValue,
+      annualizedStandardDeviation: r.fund.annualizedStandardDeviation,
       matchedHoldings: r.matchedHoldings.map((h) => ({
         stockName: h.stock_name,
         holdingRatio: h.holding_ratio,

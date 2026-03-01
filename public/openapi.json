@@ -429,6 +429,8 @@
           "dividendFrequency": { "type": "string" },
           "rateOfReturn1Year": { "type": "number" },
           "rateOfReturn3Years": { "type": "number" },
+          "costPerformanceValue": { "type": "number", "description": "夏普指數（越高越好，衡量風險調整後報酬）" },
+          "annualizedStandardDeviation": { "type": "number", "description": "年化標準差（波動度，越低越穩定）" },
           "tradingType": { "type": "array", "items": { "type": "string" }, "description": "交易方式（PUR=單筆申購、SIP=定期定額）" },
           "url": { "type": "string" }
         }
@@ -542,6 +544,8 @@
           "investmentArea": { "type": "string" },
           "dividendFrequency": { "type": "string" },
           "rateOfReturn1Year": { "type": "number" },
+          "costPerformanceValue": { "type": "number", "description": "夏普指數（越高越好，衡量風險調整後報酬）" },
+          "annualizedStandardDeviation": { "type": "number", "description": "年化標準差（波動度，越低越穩定）" },
           "matchedHoldings": {
             "type": "array",
             "items": {
