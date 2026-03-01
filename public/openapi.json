@@ -311,6 +311,51 @@
         }
       }
     },
+    "/api/trending-news": {
+      "get": {
+        "operationId": "getTrendingNews",
+        "summary": "取得近期投資相關新聞",
+        "description": "取得最新的財經與投資相關新聞，用於新聞驅動推薦流程。當用戶沒有明確投資方向時，先呼叫此 API 取得新聞讓用戶選擇，再根據所選新聞搜尋對應基金。",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "回傳新聞數量（預設 5，最多 10）",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 10, "default": 5 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "新聞列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalArticles": { "type": "integer", "description": "可用新聞總數" },
+                    "showing": { "type": "integer", "description": "本次回傳筆數" },
+                    "articles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rank": { "type": "integer" },
+                          "title": { "type": "string", "description": "新聞標題" },
+                          "description": { "type": "string", "description": "新聞摘要" },
+                          "source": { "type": "string", "description": "新聞來源" },
+                          "publishedAt": { "type": "string", "description": "發布時間" },
+                          "url": { "type": "string", "description": "原文連結" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/top-performers": {
       "get": {
         "operationId": "getTopPerformers",

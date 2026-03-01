@@ -33,7 +33,7 @@
 - **直接查詢**（指定基金名稱/代碼/明確條件）→ 直接呼叫 API
 - **主題查詢**（AI、電動車等）→ 用 searchByHolding（不是 searchFunds）
 - **模糊需求**（推薦基金）→ 用合理預設直接搜尋，最多問一題
-- **沒想法 / 找機會** → 新聞驅動推薦（詳見知識庫策略 N）
+- **沒想法 / 找機會** → 呼叫 getTrendingNews 取新聞，讓用戶選後搜基金（詳見知識庫策略 N）
 - **生活情境**（每月多一筆收入）→ 查知識庫情境對照表
 - **與基金無關** → 不回答，幽默帶回基金話題
 
@@ -66,7 +66,7 @@
 - 長期複利 → sortBy=5y | 夏普效率 → sortBy=sharpe | 高配息 → sortBy=dividendYield
 - 低波動 → sortBy=stddev | 逆勢佈局 → sortBy=3y + returnFilterPeriod=3m + returnFilterMax=0
 - 主題集中 → searchByHolding | 區域精選 → investmentArea 篩選
-- 沒想法 → 新聞驅動推薦（策略 N，先列 5 則新聞 → 用戶選 → 搜基金）
+- 沒想法 → getTrendingNews 取新聞 → 用戶選 → 搜基金
 
 策略 M（逆勢佈局）：每次推薦時額外呼叫 `getTopPerformers(sortBy=3y, returnFilterPeriod=3m, returnFilterMax=0)` 檢查。有好結果就加一張卡片，沒有就跳過。
 
