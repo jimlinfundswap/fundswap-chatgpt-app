@@ -13,6 +13,21 @@ interface GNewsResponse {
   articles: GNewsArticle[];
 }
 
+async function fetchTopic(apiKey: string, topic: string, max: number): Promise<GNewsArticle[]> {
+  const url = new URL("https://gnews.io/api/v4/top-headlines");
+  url.searchParams.set("token", apiKey);
+  url.searchParams.set("lang", "zh");
+  url.searchParams.set("country", "tw");
+  url.searchParams.set("topic", topic);
+  url.searchParams.set("max", String(max));
+
+  const response = await fetch(url.toString());
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as GNewsResponse;
+  return data.articles ?? [];
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -26,21 +41,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const limit = Math.min(Math.max(Number(req.query.limit) || 5, 1), 10);
 
   try {
-    const url = new URL("https://gnews.io/api/v4/top-headlines");
-    url.searchParams.set("token", apiKey);
-    url.searchParams.set("lang", "zh");
-    url.searchParams.set("topic", "business");
-    url.searchParams.set("max", String(limit));
+    // 同時抓國際大事和財經新聞，合併去重後取前 N 則
+    const [worldArticles, bizArticles] = await Promise.all([
+      fetchTopic(apiKey, "world", limit),
+      fetchTopic(apiKey, "business", limit),
+    ]);
 
-    const response = await fetch(url.toString());
+    // 去重（依 title）並交錯合併：先國際再財經
+    const seen = new Set<string>();
+    const merged: GNewsArticle[] = [];
 
-    if (!response.ok) {
-      return res.status(502).json({ error: `GNews API error: ${response.status}` });
+    for (const a of [...worldArticles, ...bizArticles]) {
+      if (!seen.has(a.title)) {
+        seen.add(a.title);
+        merged.push(a);
+      }
     }
 
-    const data = (await response.json()) as GNewsResponse;
-
-    const articles = data.articles.map((a, i) => ({
+    const articles = merged.slice(0, limit).map((a, i) => ({
       rank: i + 1,
       title: a.title,
       description: a.description,
@@ -51,7 +69,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
     return res.status(200).json({
-      totalArticles: data.totalArticles,
       showing: articles.length,
       articles,
     });
