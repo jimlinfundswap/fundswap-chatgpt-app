@@ -41,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "GNEWS_API_KEY not configured" });
   }
 
-  const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 20);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 30);
 
   try {
     // 同時抓財經、科技、國際新聞（3 個主題各 10 則）
