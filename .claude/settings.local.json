@@ -9,7 +9,8 @@
       "Bash(python:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git -C \"d:\\\\fundswap_github\\\\fundswap-chatgpt-app-1\" status)"
+      "Bash(git -C \"d:\\\\fundswap_github\\\\fundswap-chatgpt-app-1\" status)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }
