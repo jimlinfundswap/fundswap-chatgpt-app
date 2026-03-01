@@ -16,8 +16,8 @@ interface GNewsResponse {
 async function fetchTopic(apiKey: string, topic: string, max: number): Promise<{ articles: GNewsArticle[]; error?: string }> {
   const url = new URL("https://gnews.io/api/v4/top-headlines");
   url.searchParams.set("token", apiKey);
-  url.searchParams.set("lang", "zh");
-  url.searchParams.set("country", "tw");
+  url.searchParams.set("lang", "en");
+  url.searchParams.set("country", "us");
   url.searchParams.set("topic", topic);
   url.searchParams.set("max", String(max));
 
@@ -41,25 +41,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "GNEWS_API_KEY not configured" });
   }
 
-  const limit = Math.min(Math.max(Number(req.query.limit) || 5, 1), 10);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 20);
 
   try {
-    // 同時抓國際大事和財經新聞，合併去重後取前 N 則
-    const [worldResult, bizResult] = await Promise.all([
-      fetchTopic(apiKey, "world", limit),
-      fetchTopic(apiKey, "business", limit),
+    // 同時抓財經、科技、國際新聞（3 個主題各 10 則）
+    const [bizResult, techResult, worldResult] = await Promise.all([
+      fetchTopic(apiKey, "business", 10),
+      fetchTopic(apiKey, "technology", 10),
+      fetchTopic(apiKey, "world", 10),
     ]);
 
-    const errors = [worldResult.error, bizResult.error].filter(Boolean);
+    const errors = [bizResult.error, techResult.error, worldResult.error].filter(Boolean);
 
-    // 去重（依 title）並交錯合併：先國際再財經
+    // 交錯合併：財經 > 科技 > 國際（每輪 biz, tech, world）
     const seen = new Set<string>();
     const merged: GNewsArticle[] = [];
+    const sources = [bizResult.articles, techResult.articles, worldResult.articles];
+    const idx = [0, 0, 0];
 
-    for (const a of [...worldResult.articles, ...bizResult.articles]) {
-      if (!seen.has(a.title)) {
-        seen.add(a.title);
-        merged.push(a);
+    while (merged.length < 30 && sources.some((s, i) => idx[i] < s.length)) {
+      for (let s = 0; s < sources.length; s++) {
+        if (idx[s] < sources[s].length) {
+          const a = sources[s][idx[s]++];
+          if (!seen.has(a.title)) { seen.add(a.title); merged.push(a); }
+        }
       }
     }
 

@@ -320,8 +320,8 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "回傳新聞數量（預設 5，最多 10）",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 10, "default": 5 }
+            "description": "回傳新聞數量（預設 20，最多 20）",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 20, "default": 20 }
           }
         ],
         "responses": {
