@@ -13,7 +13,7 @@ interface GNewsResponse {
   articles: GNewsArticle[];
 }
 
-async function fetchTopic(apiKey: string, topic: string, max: number): Promise<GNewsArticle[]> {
+async function fetchTopic(apiKey: string, topic: string, max: number): Promise<{ articles: GNewsArticle[]; error?: string }> {
   const url = new URL("https://gnews.io/api/v4/top-headlines");
   url.searchParams.set("token", apiKey);
   url.searchParams.set("lang", "zh");
@@ -22,10 +22,13 @@ async function fetchTopic(apiKey: string, topic: string, max: number): Promise<G
   url.searchParams.set("max", String(max));
 
   const response = await fetch(url.toString());
-  if (!response.ok) return [];
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    return { articles: [], error: `${topic}: HTTP ${response.status} ${text.slice(0, 200)}` };
+  }
 
   const data = (await response.json()) as GNewsResponse;
-  return data.articles ?? [];
+  return { articles: data.articles ?? [] };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -42,16 +45,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // 同時抓國際大事和財經新聞，合併去重後取前 N 則
-    const [worldArticles, bizArticles] = await Promise.all([
+    const [worldResult, bizResult] = await Promise.all([
       fetchTopic(apiKey, "world", limit),
       fetchTopic(apiKey, "business", limit),
     ]);
+
+    const errors = [worldResult.error, bizResult.error].filter(Boolean);
 
     // 去重（依 title）並交錯合併：先國際再財經
     const seen = new Set<string>();
     const merged: GNewsArticle[] = [];
 
-    for (const a of [...worldArticles, ...bizArticles]) {
+    for (const a of [...worldResult.articles, ...bizResult.articles]) {
       if (!seen.has(a.title)) {
         seen.add(a.title);
         merged.push(a);
@@ -67,10 +72,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       url: a.url,
     }));
 
-    res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+    // 只在有結果時快取，避免錯誤結果被長期快取
+    if (articles.length > 0) {
+      res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+    }
     return res.status(200).json({
       showing: articles.length,
       articles,
+      ...(errors.length > 0 ? { _debug: errors } : {}),
     });
   } catch (err) {
     return res.status(502).json({ error: "Failed to fetch news" });
