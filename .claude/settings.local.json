@@ -14,7 +14,9 @@
       "WebFetch(domain:fundswap-chatgpt-app-1.vercel.app)",
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
-      "Bash(cmd /c \"C:\\\\Users\\\\Jim\\\\.volta\\\\bin\\\\npx.exe tsc --noEmit 2>&1\")"
+      "Bash(cmd /c \"C:\\\\Users\\\\Jim\\\\.volta\\\\bin\\\\npx.exe tsc --noEmit 2>&1\")",
+      "Bash(curl:*)",
+      "Bash(node -e:*)"
     ]
   }
 }
