@@ -65,7 +65,7 @@ const SORT_LABELS: Record<string, string> = {
 export function handleTopPerformers(input: TopPerformersInput): string {
   const sortBy = input.sortBy ?? "1y";
   const limit = input.limit ?? 10;
-  const results = getTopPerformers(
+  const { funds: results } = getTopPerformers(
     {
       investmentTarget: input.investmentTarget,
       fundNameCategory: input.fundNameCategory,

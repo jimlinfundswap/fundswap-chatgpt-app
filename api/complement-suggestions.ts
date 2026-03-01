@@ -51,6 +51,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   return res.status(200).json({
+    source: "FundSwap 好好證券",
+    fundswapUrl: "https://www.fundswap.com.tw",
     baseFund: {
       ...profile.baseFund,
       url: getFundUrl(profile.baseFund.mfxId),

@@ -10,7 +10,11 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git -C \"d:\\\\fundswap_github\\\\fundswap-chatgpt-app-1\" status)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "WebFetch(domain:fundswap-chatgpt-app-1.vercel.app)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(cmd /c \"C:\\\\Users\\\\Jim\\\\.volta\\\\bin\\\\npx.exe tsc --noEmit 2>&1\")"
     ]
   }
 }

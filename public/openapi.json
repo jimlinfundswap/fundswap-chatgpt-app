@@ -94,6 +94,8 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "source": { "type": "string", "description": "資料來源（FundSwap 好好證券）" },
+                    "fundswapUrl": { "type": "string", "description": "FundSwap 官網連結" },
                     "total": { "type": "integer", "description": "符合條件的基金總數" },
                     "showing": { "type": "integer", "description": "本次回傳筆數（最多 20）" },
                     "funds": {
@@ -170,6 +172,8 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "source": { "type": "string", "description": "資料來源（FundSwap 好好證券）" },
+                    "fundswapUrl": { "type": "string", "description": "FundSwap 官網連結" },
                     "notFound": {
                       "type": "array",
                       "items": { "type": "string" },
@@ -224,8 +228,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "source": { "type": "string", "description": "資料來源（FundSwap 好好證券）" },
+                    "fundswapUrl": { "type": "string", "description": "FundSwap 官網連結" },
                     "query": { "type": "string" },
-                    "total": { "type": "integer" },
+                    "total": { "type": "integer", "description": "符合條件的基金總數（用於「評估範圍」標題的 X 檔）" },
+                    "showing": { "type": "integer", "description": "本次回傳筆數（最多 20）" },
                     "funds": {
                       "type": "array",
                       "items": { "$ref": "#/components/schemas/HoldingMatch" }
@@ -389,8 +396,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "source": { "type": "string", "description": "資料來源（FundSwap 好好證券）" },
+                    "fundswapUrl": { "type": "string", "description": "FundSwap 官網連結" },
                     "sortBy": { "type": "string" },
-                    "total": { "type": "integer" },
+                    "total": { "type": "integer", "description": "符合條件的基金總數（用於「評估範圍」標題的 X 檔）" },
+                    "showing": { "type": "integer", "description": "本次回傳筆數（最多 20）" },
                     "funds": {
                       "type": "array",
                       "items": { "$ref": "#/components/schemas/FundRanking" }
@@ -426,6 +436,8 @@
       "FundDetail": {
         "type": "object",
         "properties": {
+          "source": { "type": "string", "description": "資料來源（FundSwap 好好證券）" },
+          "fundswapUrl": { "type": "string", "description": "FundSwap 官網連結" },
           "mfxId": { "type": "string" },
           "fundShortName": { "type": "string" },
           "investmentTarget": { "type": "string" },
@@ -576,6 +588,8 @@
       "HoldingsOverlap": {
         "type": "object",
         "properties": {
+          "source": { "type": "string", "description": "資料來源（FundSwap 好好證券）" },
+          "fundswapUrl": { "type": "string", "description": "FundSwap 官網連結" },
           "funds": {
             "type": "array",
             "items": {
@@ -617,6 +631,8 @@
       "ComplementSuggestions": {
         "type": "object",
         "properties": {
+          "source": { "type": "string", "description": "資料來源（FundSwap 好好證券）" },
+          "fundswapUrl": { "type": "string", "description": "FundSwap 官網連結" },
           "baseFund": {
             "type": "object",
             "description": "已選的基金",

@@ -31,6 +31,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const display = results.slice(0, 20);
 
   return res.status(200).json({
+    source: "FundSwap 好好證券",
+    fundswapUrl: "https://www.fundswap.com.tw",
     total: results.length,
     showing: display.length,
     funds: display.map((f) => ({

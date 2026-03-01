@@ -14,11 +14,14 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const investmentTarget = asString(req.query.investmentTarget);
   const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 20);
 
-  const results = searchByHolding({ stockName, investmentTarget, limit });
+  const { matches: results, total } = searchByHolding({ stockName, investmentTarget, limit });
 
   return res.status(200).json({
+    source: "FundSwap 好好證券",
+    fundswapUrl: "https://www.fundswap.com.tw",
     query: stockName,
-    total: results.length,
+    total,
+    showing: results.length,
     funds: results.map((r) => ({
       mfxId: r.fund.mfxId,
       fundShortName: r.fund.fundShortName,

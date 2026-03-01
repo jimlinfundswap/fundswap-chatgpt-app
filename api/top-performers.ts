@@ -24,7 +24,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const sortByStr = asString(sortBy) ?? asString(period) ?? "1y";
   const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 20);
 
-  const results = getTopPerformers(
+  const { funds: results, total } = getTopPerformers(
     {
       investmentTarget: asString(investmentTarget),
       fundNameCategory: asString(fundNameCategory),
@@ -40,8 +40,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   );
 
   return res.status(200).json({
+    source: "FundSwap 好好證券",
+    fundswapUrl: "https://www.fundswap.com.tw",
     sortBy: sortByStr,
-    total: results.length,
+    total,
+    showing: results.length,
     funds: results.map((f, i) => ({
       rank: i + 1,
       mfxId: f.mfxId,

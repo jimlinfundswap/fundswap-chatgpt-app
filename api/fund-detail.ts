@@ -23,6 +23,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const stats = getCategoryStats(fund);
 
   return res.status(200).json({
+    source: "FundSwap 好好證券",
+    fundswapUrl: "https://www.fundswap.com.tw",
     mfxId: fund.mfxId,
     fundShortName: fund.fundShortName,
     investmentTarget: fund.investmentTarget,

@@ -153,7 +153,7 @@ export function getTopPerformers(
   },
   sortBy: string = "1y",
   limit: number = 10
-): Fund[] {
+): { funds: Fund[]; total: number } {
   let results = loadFunds();
 
   if (filters.investmentTarget) {
@@ -199,7 +199,7 @@ export function getTopPerformers(
   }
 
   const sortKey = SORT_KEY_MAP[sortBy];
-  if (!sortKey) return [];
+  if (!sortKey) return { funds: [], total: 0 };
 
   const asc = ASC_SORT_KEYS.has(sortBy);
 
@@ -214,7 +214,8 @@ export function getTopPerformers(
         : (b[sortKey] as number) - (a[sortKey] as number)
     );
 
-  return deduplicateFunds(sorted, (f) => f).slice(0, limit);
+  const deduped = deduplicateFunds(sorted, (f) => f);
+  return { funds: deduped.slice(0, limit), total: deduped.length };
 }
 
 export interface HoldingMatch {
@@ -227,7 +228,7 @@ export function searchByHolding(query: {
   stockName: string;
   investmentTarget?: string;
   limit?: number;
-}): HoldingMatch[] {
+}): { matches: HoldingMatch[]; total: number } {
   let allFunds = loadFunds();
 
   if (query.investmentTarget) {
@@ -262,7 +263,7 @@ export function searchByHolding(query: {
 
   const deduped = deduplicateFunds(matches, (m) => m.fund);
   const limit = query.limit ?? 10;
-  return deduped.slice(0, limit);
+  return { matches: deduped.slice(0, limit), total: deduped.length };
 }
 
 export function getFundUrl(mfxId: string): string {
