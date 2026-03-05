@@ -8,6 +8,8 @@ const raw = JSON.parse(fs.readFileSync(inputPath, "utf-8"));
 
 const slim = raw.map((f) => ({
   mfxId: f.mfxId,
+  how_fund_id: f.how_fund_id,
+  major_how_fund_id: f.major_how_fund_id,
   fundShortName: f.fundShortName,
   generalIssuer: f.generalIssuer,
   fundNameCategory: f.fundNameCategory,
