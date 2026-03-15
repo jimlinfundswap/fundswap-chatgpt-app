@@ -7,6 +7,8 @@ export interface StockHolding {
 
 export interface Fund {
   mfxId: string;
+  how_fund_id: string;
+  major_how_fund_id: string;
   fundShortName: string;
   generalIssuer: string;
   fundNameCategory: string;
@@ -103,24 +105,30 @@ export function getFundById(mfxId: string): Fund | undefined {
 
 // === 多級別基金去重 ===
 // 同一檔基金常有多個幣別/級別（如 美元、新台幣、累積型、配息型），
-// 持股（stockTop）完全相同。搜尋結果只保留每組的第一筆（排序最佳者）。
-
-function getFundFingerprint(fund: Fund): string {
-  return fund.stockTop
-    .map((s) => s.stock_name)
-    .sort()
-    .join("|");
-}
+// major_how_fund_id 相同代表同級別基金。
+// 優先保留主級別（how_fund_id === major_how_fund_id），否則保留排序最前者。
 
 export function deduplicateFunds<T>(items: T[], getFund: (item: T) => Fund): T[] {
-  const seen = new Set<string>();
-  const result: T[] = [];
+  const groups = new Map<string, T[]>();
   for (const item of items) {
-    const fp = getFundFingerprint(getFund(item));
-    if (!seen.has(fp)) {
-      seen.add(fp);
-      result.push(item);
+    const fund = getFund(item);
+    const key = fund.major_how_fund_id;
+    if (!groups.has(key)) {
+      groups.set(key, []);
     }
+    groups.get(key)!.push(item);
+  }
+
+  const result: T[] = [];
+  for (const group of groups.values()) {
+    // 優先選主級別，否則取排序第一筆
+    const primary = group.find(
+      (item) => {
+        const f = getFund(item);
+        return f.how_fund_id === f.major_how_fund_id;
+      }
+    );
+    result.push(primary ?? group[0]);
   }
   return result;
 }
