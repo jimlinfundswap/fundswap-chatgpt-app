@@ -16,7 +16,9 @@
       "Bash(npx tsc:*)",
       "Bash(cmd /c \"C:\\\\Users\\\\Jim\\\\.volta\\\\bin\\\\npx.exe tsc --noEmit 2>&1\")",
       "Bash(curl:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "mcp__claude-memory__memory_recall",
+      "mcp__claude-memory__memory_store"
     ]
   }
 }
